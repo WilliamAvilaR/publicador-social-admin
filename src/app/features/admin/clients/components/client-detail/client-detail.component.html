@@ -1,0 +1,217 @@
+<div class="client-detail-container">
+  <div class="header-actions">
+    <a routerLink="/dashboard/clientes" class="btn-back">← Volver a Clientes</a>
+    <div class="action-buttons" *ngIf="client">
+      <button class="btn-action btn-warning" (click)="forceLogout()">Forzar Logout</button>
+      <button class="btn-action btn-danger" (click)="resetFacebookTokens()">Resetear Tokens Facebook</button>
+    </div>
+  </div>
+
+  <!-- Mensaje de error -->
+  <div class="error-message" *ngIf="errorMessage">
+    ⚠️ {{ errorMessage }}
+  </div>
+
+  <!-- Mensaje de éxito -->
+  <div class="success-message" *ngIf="successMessage">
+    ✅ {{ successMessage }}
+  </div>
+
+  <!-- Estado de carga -->
+  <div class="loading-state" *ngIf="isLoading">
+    <p>Cargando información del cliente...</p>
+  </div>
+
+  <!-- Contenido principal -->
+  <div *ngIf="!isLoading && !errorMessage && client">
+    <div class="client-header">
+      <div>
+        <h1>{{ client.name }}</h1>
+        <p class="user-name" *ngIf="client.userName">
+          <span class="user-icon">👤</span> {{ client.userName }}
+        </p>
+        <p class="email" *ngIf="client.email">{{ client.email }}</p>
+        <p class="slug" *ngIf="client.slug && client.slug !== client.name">
+          <span class="slug-label">Slug:</span> {{ client.slug }}
+        </p>
+      </div>
+      <div class="status-info">
+        <div class="editable-badge">
+          <label>Plan:</label>
+          <select 
+            [value]="client.planCode" 
+            [disabled]="isUpdatingPlan || isLoadingPlans"
+            (change)="updatePlan($any($event.target).value)"
+            class="plan-select"
+            [ngClass]="getPlanClass(client.planCode)">
+            <option *ngIf="isLoadingPlans" value="">Cargando planes...</option>
+            <option *ngFor="let plan of availablePlans" [value]="plan.Code">
+              {{ plan.Name }}
+            </option>
+          </select>
+          <span *ngIf="isUpdatingPlan" class="loading-indicator">Actualizando...</span>
+        </div>
+        <div class="editable-badge">
+          <label>Estado:</label>
+          <select 
+            [value]="client.status" 
+            [disabled]="isUpdatingStatus || isLoadingStatuses"
+            (change)="updateStatus($any($event.target).value)"
+            class="status-select"
+            [ngClass]="getStatusClass(client.status)">
+            <option *ngIf="isLoadingStatuses" value="">Cargando estados...</option>
+            <option *ngFor="let status of availableStatuses" [value]="status.value">
+              {{ status.label }}
+            </option>
+          </select>
+          <span *ngIf="isUpdatingStatus" class="loading-indicator">Actualizando...</span>
+        </div>
+      </div>
+    </div>
+
+  <div class="info-grid">
+    <div class="info-card">
+      <h3>📋 Información General</h3>
+      <div class="info-item">
+        <span class="label">ID Cliente:</span>
+        <span class="value">#{{ client.id }}</span>
+      </div>
+      <div class="info-item">
+        <span class="label">Slug:</span>
+        <span class="value">{{ client.slug }}</span>
+      </div>
+      <div class="info-item" *ngIf="client.description">
+        <span class="label">Descripción:</span>
+        <span class="value">{{ client.description }}</span>
+      </div>
+      <div class="info-item">
+        <span class="label">Fecha Creación:</span>
+        <span class="value">{{ client.createdAt | date:'short' }}</span>
+      </div>
+      <div class="info-item">
+        <span class="label">Última Actualización:</span>
+        <span class="value">{{ client.updatedAt | date:'short' }}</span>
+      </div>
+      <div class="info-item" *ngIf="client.suspendedAt">
+        <span class="label">Suspendido desde:</span>
+        <span class="value">{{ client.suspendedAt | date:'short' }}</span>
+      </div>
+      <div class="info-item" *ngIf="client.externalKey">
+        <span class="label">Clave Externa:</span>
+        <span class="value">{{ client.externalKey }}</span>
+      </div>
+    </div>
+
+    <div class="info-card" *ngIf="client.activeSubscription">
+      <h3>💳 Suscripción Activa</h3>
+      <div class="info-item">
+        <span class="label">ID Suscripción:</span>
+        <span class="value">#{{ client.activeSubscription.SubscriptionId }}</span>
+      </div>
+      <div class="info-item">
+        <span class="label">Plan:</span>
+        <span class="value">{{ getPlanDisplayName(client.activeSubscription.PlanCode) }}</span>
+      </div>
+      <div class="info-item">
+        <span class="label">Estado:</span>
+        <span class="value">{{ client.activeSubscription.Status }}</span>
+      </div>
+      <div class="info-item">
+        <span class="label">Fecha Inicio:</span>
+        <span class="value">{{ client.activeSubscription.StartDate | date:'short' }}</span>
+      </div>
+      <div class="info-item" *ngIf="client.activeSubscription.EndDate">
+        <span class="label">Fecha Fin:</span>
+        <span class="value">{{ client.activeSubscription.EndDate | date:'short' }}</span>
+      </div>
+      <div class="info-item" *ngIf="client.activeSubscription.ExternalSubscriptionId">
+        <span class="label">ID Externo:</span>
+        <span class="value">{{ client.activeSubscription.ExternalSubscriptionId }}</span>
+      </div>
+    </div>
+
+    <div class="info-card" *ngIf="client.metrics">
+      <h3>📊 Métricas Globales</h3>
+      <div class="metrics-grid">
+        <div class="metric-item">
+          <div class="metric-value">{{ client.metrics.totalPosts }}</div>
+          <div class="metric-label">Total Posts</div>
+        </div>
+        <div class="metric-item">
+          <div class="metric-value">{{ client.metrics.scheduledPosts }}</div>
+          <div class="metric-label">Programados</div>
+        </div>
+        <div class="metric-item">
+          <div class="metric-value">{{ client.metrics.publishedPosts }}</div>
+          <div class="metric-label">Publicados</div>
+        </div>
+        <div class="metric-item">
+          <div class="metric-value">{{ client.metrics.engagementRate }}%</div>
+          <div class="metric-label">Engagement</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sections-grid">
+    <div class="section-card">
+      <h3>👥 Usuarios del Tenant ({{ client.users.length }})</h3>
+      <div class="list-items">
+        <div class="list-item" *ngFor="let user of client.users">
+          <div class="item-info">
+            <strong>{{ user.UserName || user.UserEmail }}</strong>
+            <span class="item-meta">{{ user.UserEmail }}</span>
+            <span class="item-meta">Rol: {{ user.RoleInTenant }}</span>
+          </div>
+          <span class="badge-connected">Activo</span>
+        </div>
+        <div class="list-item" *ngIf="client.users.length === 0">
+          <div class="item-info">
+            <span class="item-meta">No hay usuarios registrados</span>
+          </div>
+        </div>
+      </div>
+      <div class="info-item" style="margin-top: 10px;">
+        <span class="label">Total Usuarios Activos:</span>
+        <span class="value">{{ client.activeUsersCount }}</span>
+      </div>
+    </div>
+
+    <div class="section-card">
+      <h3>📄 Páginas Conectadas ({{ client.pages?.length || 0 }})</h3>
+      <div class="list-items">
+        <div class="list-item" *ngFor="let page of client.pages">
+          <div class="item-info">
+            <strong>{{ page.name }}</strong>
+            <span class="item-meta">Última sync: {{ page.lastSync }}</span>
+          </div>
+          <span class="badge-connected" *ngIf="page.connected">Conectado</span>
+        </div>
+        <div class="list-item" *ngIf="!client.pages || client.pages.length === 0">
+          <div class="item-info">
+            <span class="item-meta">No hay páginas conectadas</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-card">
+      <h3>👥 Grupos Conectados ({{ client.groups?.length || 0 }})</h3>
+      <div class="list-items">
+        <div class="list-item" *ngFor="let group of client.groups">
+          <div class="item-info">
+            <strong>{{ group.name }}</strong>
+            <span class="item-meta">Última sync: {{ group.lastSync }}</span>
+          </div>
+          <span class="badge-connected" *ngIf="group.connected">Conectado</span>
+        </div>
+        <div class="list-item" *ngIf="!client.groups || client.groups.length === 0">
+          <div class="item-info">
+            <span class="item-meta">No hay grupos conectados</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>
+</div>

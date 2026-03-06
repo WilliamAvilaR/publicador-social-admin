@@ -1,0 +1,22 @@
+{
+  "COMMON": {
+    "SAVE": "Salvar",
+    "CANCEL": "Cancelar",
+    "DELETE": "Excluir",
+    "EDIT": "Editar",
+    "LOADING": "Carregando...",
+    "SAVING": "Salvando...",
+    "SUCCESS": "Sucesso!",
+    "ERROR": "Erro"
+  },
+  "AUTH": {
+    "LOGIN": "Entrar",
+    "LOGOUT": "Sair",
+    "EMAIL": "E-mail",
+    "PASSWORD": "Senha"
+  },
+  "DASHBOARD": {
+    "TITLE": "Painel de Administração",
+    "WELCOME": "Bem-vindo"
+  }
+}

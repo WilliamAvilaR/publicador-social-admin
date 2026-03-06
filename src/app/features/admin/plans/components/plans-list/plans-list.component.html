@@ -1,0 +1,106 @@
+<div class="plans-container">
+  <div class="page-header">
+    <div class="header-content">
+      <div>
+        <h1>📦 Gestión de Planes</h1>
+        <p class="subtitle">Administra los planes disponibles en el sistema</p>
+      </div>
+      <a routerLink="/dashboard/planes/nuevo" class="btn-create">
+        ➕ Crear Nuevo Plan
+      </a>
+    </div>
+  </div>
+
+  <!-- Mensaje de error -->
+  <div class="error-message" *ngIf="errorMessage">
+    ⚠️ {{ errorMessage }}
+  </div>
+
+  <!-- Estado de carga -->
+  <div class="loading-state" *ngIf="isLoading">
+    <p>Cargando planes...</p>
+  </div>
+
+  <!-- Contenido principal -->
+  <div *ngIf="!isLoading && !errorMessage">
+    <div class="table-container">
+      <table class="plans-table">
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Nombre</th>
+            <th>Descripción</th>
+            <th>Precio</th>
+            <th>Estado</th>
+            <th>Tipo</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let plan of plans">
+            <td>
+              <span class="code-badge">{{ plan.Code }}</span>
+            </td>
+            <td>
+              <strong>{{ plan.Name }}</strong>
+            </td>
+            <td>
+              <span class="description">{{ plan.Description || '-' }}</span>
+            </td>
+            <td>
+              <span class="price" [ngClass]="{'price-free': plan.Price === null}">
+                {{ formatPrice(plan.Price) }}
+              </span>
+            </td>
+            <td>
+              <span class="status-badge" [ngClass]="getPlanStatusClass(plan)">
+                {{ getPlanStatusText(plan) }}
+              </span>
+            </td>
+            <td>
+              <span class="type-badge" [ngClass]="{'type-paid': plan.IsPaid, 'type-free': !plan.IsPaid}">
+                {{ plan.IsPaid ? 'De Pago' : 'Gratuito' }}
+              </span>
+            </td>
+            <td>
+              <div class="actions">
+                <!-- Editamos por código, usando el nuevo endpoint GET /api/admin/plans/by-code/{code} -->
+                <a [routerLink]="['/dashboard/planes', plan.Code]" class="btn-edit">
+                  ✏️ Editar
+                </a>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Estado vacío -->
+      <div class="empty-state" *ngIf="plans.length === 0">
+        <p>No hay planes disponibles. Crea tu primer plan para comenzar.</p>
+        <a routerLink="/dashboard/planes/nuevo" class="btn-create">
+          ➕ Crear Primer Plan
+        </a>
+      </div>
+    </div>
+
+    <!-- Resumen de estadísticas -->
+    <div class="stats-summary">
+      <div class="stat-card">
+        <div class="stat-value">{{ totalPlans }}</div>
+        <div class="stat-label">Total Planes</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">{{ activePlans }}</div>
+        <div class="stat-label">Activos</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">{{ paidPlans }}</div>
+        <div class="stat-label">De Pago</div>
+      </div>
+      <div class="stat-card" *ngIf="defaultPlan">
+        <div class="stat-value">{{ defaultPlan.Code }}</div>
+        <div class="stat-label">Plan por Defecto</div>
+      </div>
+    </div>
+  </div>
+</div>

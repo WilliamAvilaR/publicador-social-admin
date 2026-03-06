@@ -1,0 +1,50 @@
+<div class="dashboard-container">
+  <header class="dashboard-header">
+    <h1>PublicadorSocial Admin</h1>
+    <div class="user-info">
+      <div class="user-details" *ngIf="user">
+        <span class="user-name">{{ user.FullName || user.Email }}</span>
+        <span class="user-roles" *ngIf="user.InternalRoles && user.InternalRoles.length > 0">
+          {{ user.InternalRoles.join(', ') }}
+        </span>
+      </div>
+      <span *ngIf="isLoading">Cargando...</span>
+      <button (click)="logout()" class="btn-logout">Cerrar Sesión</button>
+    </div>
+  </header>
+
+  <div class="dashboard-body">
+    <aside class="dashboard-sidebar">
+      <nav class="dashboard-nav">
+        <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+          <span class="nav-icon">📊</span>
+          <span class="nav-text">Inicio</span>
+        </a>
+        <a routerLink="/dashboard/clientes" routerLinkActive="active">
+          <span class="nav-icon">👥</span>
+          <span class="nav-text">Gestión de Clientes</span>
+        </a>
+        <a routerLink="/dashboard/suscripciones" routerLinkActive="active">
+          <span class="nav-icon">💳</span>
+          <span class="nav-text">Suscripciones</span>
+        </a>
+        <a routerLink="/dashboard/planes" routerLinkActive="active">
+          <span class="nav-icon">📦</span>
+          <span class="nav-text">Gestión de Planes</span>
+        </a>
+        <a routerLink="/dashboard/soporte" routerLinkActive="active">
+          <span class="nav-icon">🛠️</span>
+          <span class="nav-text">Soporte Técnico</span>
+        </a>
+        <a routerLink="/dashboard/metricas" routerLinkActive="active">
+          <span class="nav-icon">📈</span>
+          <span class="nav-text">Métricas Globales</span>
+        </a>
+      </nav>
+    </aside>
+
+    <main class="dashboard-content">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>

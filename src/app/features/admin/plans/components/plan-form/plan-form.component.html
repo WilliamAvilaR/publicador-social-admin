@@ -1,0 +1,232 @@
+<div class="plan-form-container">
+  <div class="page-header">
+    <h1>{{ isEditMode ? '✏️ Editar Plan' : '➕ Crear Nuevo Plan' }}</h1>
+    <p class="subtitle">
+      {{ isEditMode ? 'Modifica la información del plan' : 'Completa la información para crear un nuevo plan' }}
+    </p>
+  </div>
+
+  <!-- Mensajes de error y éxito -->
+  <div class="error-message" *ngIf="errorMessage">
+    ⚠️ {{ errorMessage }}
+  </div>
+  <div class="success-message" *ngIf="successMessage">
+    ✅ {{ successMessage }}
+  </div>
+
+  <!-- Estado de carga -->
+  <div class="loading-state" *ngIf="isLoading">
+    <p>Cargando plan...</p>
+  </div>
+
+  <!-- Formulario -->
+  <div *ngIf="!isLoading" class="form-wrapper">
+    <!-- Tabs -->
+    <div class="tabs">
+      <button 
+        class="tab-button" 
+        [class.active]="activeTab === 'basic'"
+        (click)="setActiveTab('basic')">
+        📋 Información Básica
+      </button>
+      <button 
+        class="tab-button" 
+        [class.active]="activeTab === 'features'"
+        (click)="setActiveTab('features')">
+        ⚙️ Features ({{ selectedFeatures.size }})
+      </button>
+      <button 
+        class="tab-button" 
+        [class.active]="activeTab === 'limits'"
+        (click)="setActiveTab('limits')">
+        📊 Límites ({{ selectedLimits.size }})
+      </button>
+    </div>
+
+    <!-- Tab: Información Básica -->
+    <div class="tab-content" *ngIf="activeTab === 'basic'">
+      <form class="plan-form" (ngSubmit)="savePlan()">
+        <div class="form-group">
+          <label for="code">Código del Plan *</label>
+          <input 
+            type="text" 
+            id="code" 
+            [(ngModel)]="formData.Code" 
+            name="code"
+            [readonly]="isEditMode"
+            placeholder="Ej: pro, enterprise"
+            required />
+          <small>El código debe ser único y no puede cambiarse después de crear el plan</small>
+        </div>
+
+        <div class="form-group">
+          <label for="name">Nombre del Plan *</label>
+          <input 
+            type="text" 
+            id="name" 
+            [(ngModel)]="formData.Name" 
+            name="name"
+            placeholder="Ej: Plan Pro"
+            required />
+        </div>
+
+        <div class="form-group">
+          <label for="description">Descripción</label>
+          <textarea 
+            id="description" 
+            [(ngModel)]="formData.Description" 
+            name="description"
+            rows="3"
+            placeholder="Describe las características del plan"></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="isPaid">
+              <input 
+                type="checkbox" 
+                id="isPaid" 
+                [(ngModel)]="formData.IsPaid" 
+                name="isPaid" />
+              Plan de Pago
+            </label>
+          </div>
+
+          <div class="form-group" *ngIf="formData.IsPaid">
+            <label for="price">Precio *</label>
+            <input 
+              type="number" 
+              id="price" 
+              [(ngModel)]="formData.Price" 
+              name="price"
+              min="0"
+              step="0.01"
+              placeholder="0.00" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="isDefault">
+              <input 
+                type="checkbox" 
+                id="isDefault" 
+                [(ngModel)]="formData.IsDefault" 
+                name="isDefault" />
+              Plan por Defecto
+            </label>
+            <small>Si se marca, este será el plan asignado por defecto a nuevos tenants</small>
+          </div>
+
+          <div class="form-group">
+            <label for="isActive">
+              <input 
+                type="checkbox" 
+                id="isActive" 
+                [(ngModel)]="formData.IsActive" 
+                name="isActive" />
+              Plan Activo
+            </label>
+            <small>Los planes inactivos no estarán disponibles para asignar</small>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- Tab: Features -->
+    <div class="tab-content" *ngIf="activeTab === 'features'">
+      <div class="catalog-loading" *ngIf="isLoadingCatalog">
+        <p>Cargando catálogo de features...</p>
+      </div>
+
+      <div *ngIf="!isLoadingCatalog" class="features-section">
+        <p class="section-description">
+          Selecciona las features que estarán disponibles en este plan. 
+          Puedes activar o desactivar cada feature individualmente.
+        </p>
+
+        <div *ngFor="let category of getCategoryKeys(featuresByCategory)" class="category-group">
+          <h3 class="category-title">{{ category === 'module' ? 'Módulos' : 'Redes Sociales' }}</h3>
+          <div class="features-grid">
+            <div 
+              *ngFor="let feature of featuresByCategory[category]" 
+              class="feature-item"
+              [class.enabled]="isFeatureEnabled(feature.Key)"
+              (click)="toggleFeature(feature.Key)">
+              <div class="feature-checkbox">
+                <input 
+                  type="checkbox" 
+                  [checked]="isFeatureEnabled(feature.Key)"
+                  (change)="toggleFeature(feature.Key)"
+                  (click)="$event.stopPropagation()" />
+              </div>
+              <div class="feature-info">
+                <div class="feature-name">{{ feature.Name }}</div>
+                <div class="feature-key">{{ feature.Key }}</div>
+                <div class="feature-description">{{ feature.Description }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="empty-catalog" *ngIf="featuresCatalog.length === 0">
+          <p>No hay features disponibles en el catálogo.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Límites -->
+    <div class="tab-content" *ngIf="activeTab === 'limits'">
+      <div class="catalog-loading" *ngIf="isLoadingCatalog">
+        <p>Cargando catálogo de límites...</p>
+      </div>
+
+      <div *ngIf="!isLoadingCatalog" class="limits-section">
+        <p class="section-description">
+          Configura los límites para este plan. Deja el campo vacío o escribe "0" para establecer como ilimitado.
+        </p>
+
+        <div *ngFor="let category of getCategoryKeys(limitsByCategory)" class="category-group">
+          <h3 class="category-title">{{ category }}</h3>
+          <div class="limits-grid">
+            <div *ngFor="let limit of limitsByCategory[category]" class="limit-item">
+              <div class="limit-info">
+                <div class="limit-name">{{ limit.Name }}</div>
+                <div class="limit-key">{{ limit.Key }}</div>
+                <div class="limit-description">{{ limit.Description }}</div>
+              </div>
+              <div class="limit-input">
+                <input 
+                  type="number" 
+                  [value]="getLimitValue(limit.Key)"
+                  (input)="updateLimit(limit.Key, $any($event.target).value)"
+                  min="0"
+                  step="1"
+                  placeholder="Ilimitado" />
+                <span class="limit-unit">{{ limit.Unit }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="empty-catalog" *ngIf="limitsCatalog.length === 0">
+          <p>No hay límites disponibles en el catálogo.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Botones de acción -->
+    <div class="form-actions">
+      <button type="button" class="btn-cancel" (click)="cancel()" [disabled]="isSaving">
+        Cancelar
+      </button>
+      <button 
+        type="button" 
+        class="btn-save" 
+        (click)="savePlan()" 
+        [disabled]="isSaving">
+        {{ isSaving ? 'Guardando...' : (isEditMode ? 'Actualizar Plan' : 'Crear Plan') }}
+      </button>
+    </div>
+  </div>
+</div>

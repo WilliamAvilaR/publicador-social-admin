@@ -1,0 +1,239 @@
+.plans-container {
+  padding: 30px;
+}
+
+.page-header {
+  margin-bottom: 30px;
+
+  .header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 20px;
+  }
+
+  h1 {
+    color: var(--text-primary);
+    font-size: 28px;
+    margin-bottom: 8px;
+  }
+
+  .subtitle {
+    color: var(--text-secondary);
+    font-size: 14px;
+  }
+
+  .btn-create {
+    padding: 12px 24px;
+    background-color: var(--accent-primary);
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    transition: background-color 0.2s;
+    white-space: nowrap;
+
+    &:hover {
+      background-color: var(--accent-primary-hover);
+    }
+  }
+}
+
+.error-message {
+  padding: 15px 20px;
+  background-color: var(--error-bg);
+  color: var(--error-text);
+  border-radius: 6px;
+  margin-bottom: 20px;
+  border-left: 4px solid var(--error-text);
+}
+
+.loading-state {
+  text-align: center;
+  padding: 40px;
+  color: var(--text-secondary);
+  font-size: 16px;
+}
+
+.table-container {
+  background-color: var(--bg-primary);
+  border-radius: 8px;
+  box-shadow: var(--shadow-sm);
+  overflow-x: auto;
+  margin-bottom: 30px;
+}
+
+.plans-table {
+  width: 100%;
+  border-collapse: collapse;
+
+  thead {
+    background-color: var(--bg-tertiary);
+
+    th {
+      padding: 15px;
+      text-align: left;
+      font-weight: 600;
+      color: var(--text-primary);
+      border-bottom: 2px solid var(--border-primary);
+      font-size: 14px;
+    }
+  }
+
+  tbody {
+    tr {
+      border-bottom: 1px solid var(--border-primary);
+      transition: background-color 0.2s;
+
+      &:hover {
+        background-color: var(--bg-hover);
+      }
+
+      td {
+        padding: 15px;
+        color: var(--text-secondary);
+        font-size: 14px;
+      }
+    }
+  }
+}
+
+.code-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: monospace;
+}
+
+.description {
+  color: var(--text-secondary);
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: inline-block;
+}
+
+.price {
+  font-weight: 600;
+  color: var(--accent-primary);
+
+  &.price-free {
+    color: var(--success-text);
+  }
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+
+  &.status-active {
+    background-color: var(--success-bg);
+    color: var(--success-text);
+  }
+
+  &.status-default {
+    background-color: var(--info-bg);
+    color: var(--info-text);
+  }
+
+  &.status-inactive {
+    background-color: var(--error-bg);
+    color: var(--error-text);
+  }
+}
+
+.type-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+
+  &.type-paid {
+    background-color: var(--accent-primary-light);
+    color: var(--accent-primary);
+  }
+
+  &.type-free {
+    background-color: var(--info-bg);
+    color: var(--info-text);
+  }
+}
+
+.actions {
+  .btn-edit {
+    padding: 6px 12px;
+    background-color: var(--accent-primary);
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    font-size: 12px;
+    transition: background-color 0.2s;
+
+    &:hover {
+      background-color: var(--accent-primary-hover);
+    }
+  }
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-secondary);
+
+  p {
+    margin-bottom: 20px;
+    font-size: 16px;
+  }
+
+  .btn-create {
+    display: inline-block;
+    padding: 12px 24px;
+    background-color: var(--accent-primary);
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    transition: background-color 0.2s;
+
+    &:hover {
+      background-color: var(--accent-primary-hover);
+    }
+  }
+}
+
+.stats-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.stat-card {
+  background-color: var(--bg-primary);
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: var(--shadow-sm);
+  text-align: center;
+
+  .stat-value {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--accent-primary);
+    margin-bottom: 8px;
+  }
+
+  .stat-label {
+    color: var(--text-secondary);
+    font-size: 14px;
+  }
+}

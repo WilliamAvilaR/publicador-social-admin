@@ -1,0 +1,111 @@
+<div class="support-container">
+  <div class="page-header">
+    <h1>🛠️ Soporte Técnico</h1>
+    <p class="subtitle">Herramientas de diagnóstico y resolución de problemas</p>
+  </div>
+
+  <div class="support-grid">
+    <!-- Errores del Cliente -->
+    <div class="section-card">
+      <h2>⚠️ Errores del Cliente</h2>
+      <div class="errors-list">
+        <div class="error-item" *ngFor="let error of errors">
+          <div class="error-header">
+            <span class="severity-badge" [ngClass]="getSeverityClass(error.severity)">
+              {{ error.severity === 'high' ? 'Alto' : 'Medio' }}
+            </span>
+            <span class="error-type">{{ error.errorType }}</span>
+          </div>
+          <div class="error-content">
+            <strong>{{ error.clientName }}</strong>
+            <p>{{ error.message }}</p>
+            <span class="timestamp">{{ error.timestamp }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tokens Expirados -->
+    <div class="section-card">
+      <h2>🔑 Tokens Facebook Expirados</h2>
+      <div class="tokens-list">
+        <div class="token-item" *ngFor="let token of expiredTokens">
+          <div class="token-info">
+            <strong>{{ token.clientName }}</strong>
+            <span class="page-name">{{ token.pageName }}</span>
+            <div class="token-meta">
+              <span>Expirado: {{ token.expiredDate }}</span>
+              <span class="days-badge">Hace {{ token.daysExpired }} día(s)</span>
+            </div>
+          </div>
+          <button class="btn-action" (click)="retrySync(token.clientId)">Reintentar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cola de Sincronización -->
+    <div class="section-card">
+      <h2>🔄 Cola de Publicaciones</h2>
+      <div class="queue-list">
+        <div class="queue-item" *ngFor="let item of syncQueue">
+          <div class="queue-info">
+            <div class="queue-header">
+              <strong>{{ item.clientName }}</strong>
+              <span class="status-badge" [ngClass]="'status-' + item.status.toLowerCase().replace(' ', '-')">
+                {{ item.status }}
+              </span>
+            </div>
+            <span class="item-type">{{ item.itemType }}: {{ item.itemName }}</span>
+            <span class="scheduled-time">Programado: {{ item.scheduledAt }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Logs por Usuario -->
+    <div class="section-card">
+      <h2>📋 Logs por Usuario</h2>
+      <div class="logs-list">
+        <div class="log-item" *ngFor="let log of userLogs">
+          <div class="log-header">
+            <strong>{{ log.userName }}</strong>
+            <span class="client-badge">{{ log.clientName }}</span>
+          </div>
+          <div class="log-content">
+            <span class="action">{{ log.action }}</span>
+            <p class="details">{{ log.details }}</p>
+            <span class="timestamp">{{ log.timestamp }}</span>
+          </div>
+          <button class="btn-view-logs" (click)="viewLogs(log.userId)">Ver Todos los Logs</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Auditoría -->
+    <div class="section-card full-width">
+      <h2>📊 Historial de Acciones (Auditoría)</h2>
+      <div class="audit-table-container">
+        <table class="audit-table">
+          <thead>
+            <tr>
+              <th>Usuario</th>
+              <th>Cliente</th>
+              <th>Acción</th>
+              <th>Detalles</th>
+              <th>Fecha/Hora</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let log of userLogs">
+              <td>{{ log.userName }}</td>
+              <td>{{ log.clientName }}</td>
+              <td>{{ log.action }}</td>
+              <td>{{ log.details }}</td>
+              <td>{{ log.timestamp }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

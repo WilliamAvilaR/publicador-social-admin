@@ -1,0 +1,125 @@
+<div class="dashboard-overview">
+  <div class="welcome-section">
+    <h1>📊 Panel de Administración</h1>
+    <p class="subtitle">Bienvenido al panel de administración de PublicadorSocial</p>
+  </div>
+
+  <!-- Información del Admin -->
+  <div class="admin-info-section">
+    <h2>👤 Información del Usuario</h2>
+    <div class="info-card" *ngIf="isLoading">
+      <p>Cargando información...</p>
+    </div>
+    <div class="info-card" *ngIf="!isLoading && adminInfo">
+      <div class="info-row">
+        <span class="info-label">Nombre:</span>
+        <span class="info-value">{{ adminInfo.FullName }}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Email:</span>
+        <span class="info-value">{{ adminInfo.Email }}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Tipo de Usuario:</span>
+        <span class="info-value">{{ adminInfo.UserType }}</span>
+      </div>
+      <div class="info-row" *ngIf="adminInfo.InternalRoles && adminInfo.InternalRoles.length > 0">
+        <span class="info-label">Roles:</span>
+        <div class="roles-list">
+          <span class="role-badge" *ngFor="let role of adminInfo.InternalRoles">
+            {{ role }}
+          </span>
+        </div>
+      </div>
+    </div>
+    <div class="error-message" *ngIf="errorMessage">
+      ⚠️ {{ errorMessage }}
+    </div>
+  </div>
+
+  <!-- Datos Sensibles (solo si tiene permisos) -->
+  <div class="sensitive-data-section" *ngIf="canViewSensitiveData()">
+    <h2>🔒 Datos Sensibles</h2>
+    <div class="info-card" *ngIf="isLoadingSensitive">
+      <p>Cargando datos sensibles...</p>
+    </div>
+    <div class="info-card sensitive-card" *ngIf="!isLoadingSensitive && sensitiveData">
+      <div class="sensitive-header">
+        <span class="sensitive-icon">🔐</span>
+        <h3>{{ sensitiveData.Message }}</h3>
+      </div>
+      <div class="sensitive-content">
+        <p>{{ sensitiveData.SensitiveData }}</p>
+        <div class="sensitive-roles" *ngIf="sensitiveData.InternalRoles && sensitiveData.InternalRoles.length > 0">
+          <strong>Roles con acceso:</strong>
+          <span class="role-badge" *ngFor="let role of sensitiveData.InternalRoles">
+            {{ role }}
+          </span>
+        </div>
+      </div>
+    </div>
+    <div class="error-message" *ngIf="sensitiveErrorMessage">
+      ⚠️ {{ sensitiveErrorMessage }}
+    </div>
+  </div>
+
+  <!-- Mensaje de PlatformOwner (solo si tiene permisos) -->
+  <div class="platform-owner-section" *ngIf="isPlatformOwner()">
+    <h2>👑 Acceso de PlatformOwner</h2>
+    <div class="info-card" *ngIf="isLoadingOwner">
+      <p>Cargando...</p>
+    </div>
+    <div class="info-card owner-card" *ngIf="!isLoadingOwner && platformOwnerMessage">
+      <div class="owner-header">
+        <span class="owner-icon">👑</span>
+        <h3>Acceso Especial</h3>
+      </div>
+      <p class="owner-message">{{ platformOwnerMessage }}</p>
+    </div>
+    <div class="error-message" *ngIf="ownerErrorMessage">
+      ⚠️ {{ ownerErrorMessage }}
+    </div>
+  </div>
+
+  <!-- Acceso Rápido -->
+  <div class="quick-access">
+    <h2>Acceso Rápido</h2>
+    <div class="quick-cards">
+      <a routerLink="/dashboard/clientes" class="quick-card">
+        <div class="card-icon">👥</div>
+        <div class="card-content">
+          <h3>Gestión de Clientes</h3>
+          <p>Administra todas las cuentas creadas</p>
+        </div>
+      </a>
+      <a routerLink="/dashboard/suscripciones" class="quick-card">
+        <div class="card-icon">💳</div>
+        <div class="card-content">
+          <h3>Suscripciones</h3>
+          <p>Gestiona planes y pagos</p>
+        </div>
+      </a>
+      <a routerLink="/dashboard/planes" class="quick-card">
+        <div class="card-icon">📦</div>
+        <div class="card-content">
+          <h3>Gestión de Planes</h3>
+          <p>Administra planes, features y límites</p>
+        </div>
+      </a>
+      <a routerLink="/dashboard/soporte" class="quick-card">
+        <div class="card-icon">🛠️</div>
+        <div class="card-content">
+          <h3>Soporte Técnico</h3>
+          <p>Herramientas de diagnóstico</p>
+        </div>
+      </a>
+      <a routerLink="/dashboard/metricas" class="quick-card">
+        <div class="card-icon">📈</div>
+        <div class="card-content">
+          <h3>Métricas Globales</h3>
+          <p>Visión ejecutiva del negocio</p>
+        </div>
+      </a>
+    </div>
+  </div>
+</div>

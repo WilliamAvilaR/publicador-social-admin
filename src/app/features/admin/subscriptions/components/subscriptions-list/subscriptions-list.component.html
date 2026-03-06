@@ -1,0 +1,425 @@
+<div class="subscriptions-container">
+  <div class="page-header">
+    <h1>💳 Gestión de Suscripciones</h1>
+    <p class="subtitle">Administra planes, límites y pagos de los clientes</p>
+  </div>
+
+  <div class="plans-section">
+    <h2>Planes Disponibles</h2>
+    <div class="loading-state" *ngIf="isLoadingPlans">
+      <p>Cargando planes...</p>
+    </div>
+    <div class="plans-grid" *ngIf="!isLoadingPlans">
+      <div class="plan-card" *ngFor="let plan of plans">
+        <div class="plan-header">
+          <h3>{{ plan.name }}</h3>
+          <div class="plan-price">
+            <span class="currency">$</span>
+            <span class="amount">{{ plan.price === 0 ? 'Gratis' : plan.price }}</span>
+            <span class="period" *ngIf="plan.price > 0">/mes</span>
+          </div>
+        </div>
+        <div class="plan-limits">
+          <div class="limit-item">
+            <span class="limit-label">Páginas:</span>
+            <span class="limit-value">{{ getLimitDisplay(plan.limits.pages) }}</span>
+          </div>
+          <div class="limit-item">
+            <span class="limit-label">Usuarios:</span>
+            <span class="limit-value">{{ getLimitDisplay(plan.limits.users) }}</span>
+          </div>
+          <div class="limit-item">
+            <span class="limit-label">Posts Programados:</span>
+            <span class="limit-value">{{ getLimitDisplay(plan.limits.scheduledPosts) }}</span>
+          </div>
+          <div class="limit-item">
+            <span class="limit-label">Límite API:</span>
+            <span class="limit-value">{{ getLimitDisplay(plan.limits.apiCalls) }}</span>
+          </div>
+        </div>
+        <div class="plan-features" *ngIf="plan.features && plan.features.length > 0">
+          <div class="feature-item" *ngFor="let feature of plan.features">
+            {{ feature }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mensaje de error -->
+  <div class="error-message" *ngIf="errorMessage">
+    ⚠️ {{ errorMessage }}
+  </div>
+
+  <!-- Mensaje de éxito -->
+  <div class="success-message" *ngIf="successMessage">
+    ✅ {{ successMessage }}
+  </div>
+
+  <!-- Estado de carga -->
+  <div class="loading-state" *ngIf="isLoading">
+    <p>Cargando suscripciones...</p>
+  </div>
+
+  <div class="subscriptions-section" *ngIf="!isLoading">
+    <div class="section-header">
+      <h2>Suscripciones ({{ subscriptions.length }})</h2>
+      <div class="filters-bar">
+        <div class="filter-group">
+          <label for="filter-status">Estado:</label>
+          <select id="filter-status" [(ngModel)]="selectedStatus" (change)="applyFilters()" [disabled]="isLoadingStatuses">
+            <option value="">Todos</option>
+            <option *ngIf="isLoadingStatuses" value="">Cargando estados...</option>
+            <option *ngFor="let status of availableStatuses" [value]="status.value">
+              {{ status.label }}
+            </option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label for="filter-active">Activo:</label>
+          <select id="filter-active" [(ngModel)]="selectedIsActive" (change)="applyFilters()">
+            <option [ngValue]="null">Todos</option>
+            <option [ngValue]="true">Sí</option>
+            <option [ngValue]="false">No</option>
+          </select>
+        </div>
+        <button class="btn-clear" (click)="clearFilters()">Limpiar Filtros</button>
+      </div>
+    </div>
+
+    <div class="subscriptions-table-container" *ngIf="subscriptions.length > 0">
+      <table class="subscriptions-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Cliente</th>
+            <th>Plan</th>
+            <th>Estado</th>
+            <th>Fecha Inicio</th>
+            <th>Fecha Fin</th>
+            <th>ID Externo</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let sub of subscriptions">
+            <td>{{ sub.SubscriptionId }}</td>
+            <td>
+              <div class="client-info">
+                <strong>{{ sub.TenantName }}</strong>
+                <span class="tenant-id">Tenant ID: {{ sub.TenantId }}</span>
+              </div>
+            </td>
+            <td>
+              <span class="plan-badge" [ngClass]="getPlanClass(sub.PlanCode)">
+                {{ getPlanName(sub.PlanCode) }}
+              </span>
+            </td>
+            <td>
+              <span class="status-badge" [ngClass]="getStatusClass(sub.Status)">
+                {{ getStatusText(sub.Status) }}
+              </span>
+            </td>
+            <td>{{ sub.StartDate | date:'short' }}</td>
+            <td>{{ sub.EndDate ? (sub.EndDate | date:'short') : '-' }}</td>
+            <td>{{ sub.ExternalSubscriptionId || '-' }}</td>
+            <td>
+              <div class="action-buttons">
+                <select 
+                  class="status-select" 
+                  [disabled]="updatingStatusId === sub.SubscriptionId"
+                  [value]="sub.Status"
+                  (change)="updateSubscriptionStatus(sub.SubscriptionId, $any($event.target).value)">
+                  <option *ngIf="isLoadingStatuses" value="">Cargando estados...</option>
+                  <option *ngFor="let status of availableStatuses" [value]="status.value">
+                    {{ status.label }}
+                  </option>
+                </select>
+                <button 
+                  class="btn-view-details" 
+                  (click)="viewPaymentHistory(sub.SubscriptionId)"
+                  title="Ver detalles">
+                  👁️
+                </button>
+                <span class="updating-indicator" *ngIf="updatingStatusId === sub.SubscriptionId">
+                  Actualizando...
+                </span>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="empty-state" *ngIf="subscriptions.length === 0">
+      <p>No hay suscripciones disponibles</p>
+    </div>
+  </div>
+
+  <!-- Modal de Detalles de Suscripción -->
+  <div class="modal-overlay" *ngIf="showModal" (click)="closeModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>📋 Detalles de Suscripción</h2>
+        <button class="btn-close" (click)="closeModal()" title="Cerrar">✕</button>
+      </div>
+
+      <div class="modal-body" *ngIf="isLoadingDetails">
+        <div class="loading-state">
+          <p>Cargando detalles...</p>
+        </div>
+      </div>
+
+      <div class="modal-body" *ngIf="!isLoadingDetails && selectedSubscription">
+        <!-- Tabs -->
+        <div class="modal-tabs">
+          <button 
+            class="tab-button" 
+            [class.active]="modalActiveTab === 'info'"
+            (click)="setModalTab('info')">
+            ℹ️ Información
+          </button>
+          <button 
+            class="tab-button" 
+            [class.active]="modalActiveTab === 'plan'"
+            (click)="setModalTab('plan')">
+            📦 Plan
+          </button>
+          <button 
+            class="tab-button" 
+            [class.active]="modalActiveTab === 'limits'"
+            (click)="setModalTab('limits')">
+            📊 Límites
+          </button>
+        </div>
+
+        <!-- Mensajes de error y éxito -->
+        <div class="error-message" *ngIf="errorMessage">
+          ⚠️ {{ errorMessage }}
+        </div>
+        <div class="success-message" *ngIf="successMessage">
+          ✅ {{ successMessage }}
+        </div>
+
+        <!-- Tab: Información -->
+        <div class="tab-content" *ngIf="modalActiveTab === 'info'">
+          <div class="detail-section">
+            <h3>Información General</h3>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <label>ID de Suscripción:</label>
+                <span>{{ selectedSubscription.SubscriptionId }}</span>
+              </div>
+              <div class="detail-item">
+                <label>Tenant:</label>
+                <span>{{ selectedSubscription.TenantName }}</span>
+              </div>
+              <div class="detail-item">
+                <label>Tenant ID:</label>
+                <span>{{ selectedSubscription.TenantId }}</span>
+              </div>
+              <div class="detail-item">
+                <label>Tenant Slug:</label>
+                <span>{{ selectedSubscription.TenantSlug }}</span>
+              </div>
+              <div class="detail-item">
+                <label>Plan Actual:</label>
+                <span class="plan-badge" [ngClass]="getPlanClass(selectedSubscription.PlanCode)">
+                  {{ getPlanName(selectedSubscription.PlanCode) }}
+                </span>
+              </div>
+              <div class="detail-item">
+                <label>Estado:</label>
+                <span class="status-badge" [ngClass]="getStatusClass(selectedSubscription.Status)">
+                  {{ getStatusText(selectedSubscription.Status) }}
+                </span>
+              </div>
+              <div class="detail-item">
+                <label>Activo:</label>
+                <span>{{ selectedSubscription.IsActive ? 'Sí' : 'No' }}</span>
+              </div>
+              <div class="detail-item">
+                <label>Fecha de Inicio:</label>
+                <span>{{ selectedSubscription.StartDate | date:'short' }}</span>
+              </div>
+              <div class="detail-item">
+                <label>Fecha de Fin:</label>
+                <span>{{ selectedSubscription.EndDate ? (selectedSubscription.EndDate | date:'short') : 'No definida' }}</span>
+              </div>
+              <div class="detail-item">
+                <label>Cancelado en:</label>
+                <span>{{ selectedSubscription.CancelledAt ? (selectedSubscription.CancelledAt | date:'short') : 'N/A' }}</span>
+              </div>
+              <div class="detail-item">
+                <label>Razón de Cancelación:</label>
+                <span>{{ selectedSubscription.CancellationReason || 'N/A' }}</span>
+              </div>
+              <div class="detail-item">
+                <label>ID Externo:</label>
+                <span>{{ selectedSubscription.ExternalSubscriptionId || 'N/A' }}</span>
+              </div>
+              <div class="detail-item full-width">
+                <label>Notas:</label>
+                <span>{{ selectedSubscription.Notes || 'Sin notas' }}</span>
+              </div>
+              <div class="detail-item">
+                <label>Creado:</label>
+                <span>{{ selectedSubscription.CreatedAt | date:'short' }}</span>
+              </div>
+              <div class="detail-item">
+                <label>Actualizado:</label>
+                <span>{{ selectedSubscription.UpdatedAt | date:'short' }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab: Plan -->
+        <div class="tab-content" *ngIf="modalActiveTab === 'plan'">
+          <div class="detail-section">
+            <h3>Cambiar Plan del Tenant</h3>
+            <p class="section-description">
+              Al cambiar el plan, se creará una nueva suscripción y se desactivará la anterior.
+            </p>
+            
+            <div class="form-group">
+              <label for="plan-select">Plan:</label>
+              <select 
+                id="plan-select" 
+                [(ngModel)]="selectedPlanCode"
+                [disabled]="isUpdatingPlan">
+                <option *ngFor="let plan of availablePlansForSelect" [value]="plan.Code">
+                  {{ plan.Name }} ({{ plan.Code }}) - {{ plan.Price ? '$' + plan.Price + '/mes' : 'Gratis' }}
+                </option>
+              </select>
+            </div>
+
+            <div class="form-actions">
+              <button 
+                class="btn-save" 
+                (click)="updateTenantPlan()"
+                [disabled]="isUpdatingPlan || selectedPlanCode === selectedSubscription.PlanCode">
+                {{ isUpdatingPlan ? 'Actualizando...' : 'Actualizar Plan' }}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab: Límites -->
+        <div class="tab-content" *ngIf="modalActiveTab === 'limits'">
+          <div class="detail-section">
+            <h3>Límites Personalizados del Tenant</h3>
+            <p class="section-description">
+              Los límites personalizados sobrescriben los límites del plan. Deja en 0 para usar los límites del plan.
+            </p>
+
+            <div class="loading-state" *ngIf="isLoadingLimits">
+              <p>Cargando límites...</p>
+            </div>
+
+            <div *ngIf="!isLoadingLimits" class="limits-form">
+              <div class="form-group">
+                <label for="maxUsers">Máximo de Usuarios:</label>
+                <input 
+                  type="number" 
+                  id="maxUsers" 
+                  [(ngModel)]="limitsForm.maxUsers"
+                  min="0"
+                  step="1" />
+                <small>0 = usar límite del plan</small>
+              </div>
+
+              <div class="form-group">
+                <label for="maxStorageMB">Almacenamiento Máximo (MB):</label>
+                <input 
+                  type="number" 
+                  id="maxStorageMB" 
+                  [(ngModel)]="limitsForm.maxStorageMB"
+                  min="0"
+                  step="1" />
+                <small>0 = usar límite del plan</small>
+              </div>
+
+              <div class="form-group">
+                <label for="maxPostsPerMonth">Posts por Mes:</label>
+                <input 
+                  type="number" 
+                  id="maxPostsPerMonth" 
+                  [(ngModel)]="limitsForm.maxPostsPerMonth"
+                  min="0"
+                  step="1" />
+                <small>0 = usar límite del plan</small>
+              </div>
+
+              <div class="form-group">
+                <label for="maxIntegrations">Máximo de Integraciones:</label>
+                <input 
+                  type="number" 
+                  id="maxIntegrations" 
+                  [(ngModel)]="limitsForm.maxIntegrations"
+                  min="0"
+                  step="1" />
+                <small>0 = usar límite del plan</small>
+              </div>
+
+              <div class="form-group">
+                <label for="maxCollections">Máximo de Colecciones:</label>
+                <input 
+                  type="number" 
+                  id="maxCollections" 
+                  [(ngModel)]="limitsForm.maxCollections"
+                  min="0"
+                  step="1" />
+                <small>0 = usar límite del plan</small>
+              </div>
+
+              <div class="form-group">
+                <label for="limitsNotes">Notas:</label>
+                <textarea 
+                  id="limitsNotes" 
+                  [(ngModel)]="limitsForm.notes"
+                  rows="3"
+                  placeholder="Notas adicionales sobre los límites..."></textarea>
+              </div>
+
+              <div class="form-actions">
+                <button 
+                  class="btn-save" 
+                  (click)="updateTenantLimits()"
+                  [disabled]="isUpdatingLimits">
+                  {{ isUpdatingLimits ? 'Guardando...' : 'Guardar Límites' }}
+                </button>
+              </div>
+
+              <!-- Mostrar límites actuales si existen -->
+              <div class="current-limits" *ngIf="tenantLimits">
+                <h4>Límites Actuales:</h4>
+                <div class="limits-display">
+                  <div class="limit-display-item">
+                    <span class="limit-label">Usuarios:</span>
+                    <span class="limit-value">{{ tenantLimits.maxUsers || 'Del plan' }}</span>
+                  </div>
+                  <div class="limit-display-item">
+                    <span class="limit-label">Almacenamiento:</span>
+                    <span class="limit-value">{{ tenantLimits.maxStorageMB || 'Del plan' }} MB</span>
+                  </div>
+                  <div class="limit-display-item">
+                    <span class="limit-label">Posts/Mes:</span>
+                    <span class="limit-value">{{ tenantLimits.maxPostsPerMonth || 'Del plan' }}</span>
+                  </div>
+                  <div class="limit-display-item">
+                    <span class="limit-label">Integraciones:</span>
+                    <span class="limit-value">{{ tenantLimits.maxIntegrations || 'Del plan' }}</span>
+                  </div>
+                  <div class="limit-display-item">
+                    <span class="limit-label">Colecciones:</span>
+                    <span class="limit-value">{{ tenantLimits.maxCollections || 'Del plan' }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

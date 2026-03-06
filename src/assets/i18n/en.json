@@ -1,0 +1,22 @@
+{
+  "COMMON": {
+    "SAVE": "Save",
+    "CANCEL": "Cancel",
+    "DELETE": "Delete",
+    "EDIT": "Edit",
+    "LOADING": "Loading...",
+    "SAVING": "Saving...",
+    "SUCCESS": "Success!",
+    "ERROR": "Error"
+  },
+  "AUTH": {
+    "LOGIN": "Login",
+    "LOGOUT": "Logout",
+    "EMAIL": "Email",
+    "PASSWORD": "Password"
+  },
+  "DASHBOARD": {
+    "TITLE": "Admin Panel",
+    "WELCOME": "Welcome"
+  }
+}

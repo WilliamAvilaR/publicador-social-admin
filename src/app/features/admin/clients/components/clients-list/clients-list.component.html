@@ -1,0 +1,132 @@
+<div class="clients-container">
+  <div class="page-header">
+    <h1>👥 Gestión de Clientes (Multi-Tenant)</h1>
+    <p class="subtitle">Administra todas las cuentas creadas en el sistema</p>
+  </div>
+
+  <!-- Mensaje de error -->
+  <div class="error-message" *ngIf="errorMessage">
+    ⚠️ {{ errorMessage }}
+  </div>
+
+  <!-- Estado de carga -->
+  <div class="loading-state" *ngIf="isLoading">
+    <p>Cargando clientes...</p>
+  </div>
+
+  <!-- Contenido principal -->
+  <div *ngIf="!isLoading && !errorMessage">
+    <div class="filters-bar">
+      <div class="search-box">
+        <input 
+          type="text" 
+          placeholder="Buscar por nombre, email..." 
+          [(ngModel)]="searchTerm"
+          (keyup.enter)="applyFilters()" />
+        <button class="btn-search" (click)="applyFilters()">🔍 Buscar</button>
+      </div>
+      <div class="filter-group">
+        <select [(ngModel)]="selectedStatus" (change)="applyFilters()" [disabled]="isLoadingStatuses">
+          <option value="">Todos los estados</option>
+          <option *ngIf="isLoadingStatuses" value="">Cargando estados...</option>
+          <option *ngFor="let status of availableStatuses" [value]="status.value">
+            {{ status.label }}
+          </option>
+        </select>
+        <select [(ngModel)]="selectedPlanCode" (change)="applyFilters()">
+          <option value="">Todos los planes</option>
+          <!-- Opciones dinámicas cargadas desde GET /api/admin/plans -->
+          <option 
+            *ngFor="let plan of availablePlans" 
+            [value]="plan.Code">
+            {{ plan.Name }} ({{ plan.Code }})
+          </option>
+        </select>
+        <button class="btn-clear" (click)="clearFilters()">Limpiar Filtros</button>
+      </div>
+    </div>
+
+  <div class="table-container">
+    <table class="clients-table">
+      <thead>
+        <tr>
+          <th>Cliente</th>
+          <th>Plan</th>
+          <th>Estado</th>
+          <th>Usuarios Activos</th>
+          <th>Slug</th>
+          <th>Fecha Creación</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let client of clients">
+          <td>
+            <div class="client-info">
+              <strong>{{ client.name }}</strong>
+              <span class="email">{{ client.description || client.slug }}</span>
+            </div>
+          </td>
+          <td>
+            <span class="plan-badge" [ngClass]="getPlanClass(client.planCode)" *ngIf="client.planCode">
+              {{ getPlanText(client.planCode) }}
+            </span>
+            <span *ngIf="!client.planCode">-</span>
+          </td>
+          <td>
+            <span class="status-badge" [ngClass]="getStatusClass(client.status)">
+              {{ getStatusText(client.status) }}
+            </span>
+          </td>
+          <td>{{ client.activeUsersCount || 0 }}</td>
+          <td>{{ client.slug }}</td>
+          <td>{{ client.createdAt | date:'short' }}</td>
+          <td>
+            <div class="actions">
+              <a [routerLink]="['/dashboard/clientes', client.tenantId]" class="btn-view">Ver Detalle</a>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Paginación -->
+    <div class="pagination" *ngIf="totalPages > 1">
+      <button 
+        class="btn-pagination" 
+        [disabled]="currentPage === 1"
+        (click)="changePage(currentPage - 1)">
+        ← Anterior
+      </button>
+      <span class="page-info">
+        Página {{ currentPage }} de {{ totalPages }} ({{ totalCount }} total)
+      </span>
+      <button 
+        class="btn-pagination" 
+        [disabled]="currentPage === totalPages"
+        (click)="changePage(currentPage + 1)">
+        Siguiente →
+      </button>
+    </div>
+  </div>
+
+  <div class="stats-summary">
+    <div class="stat-card">
+      <div class="stat-value">{{ totalClients }}</div>
+      <div class="stat-label">Total Clientes</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{{ activeClients }}</div>
+      <div class="stat-label">Activos</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{{ trialClients }}</div>
+      <div class="stat-label">En Trial</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{{ totalActiveUsers }}</div>
+      <div class="stat-label">Total Usuarios</div>
+    </div>
+  </div>
+  </div>
+</div>

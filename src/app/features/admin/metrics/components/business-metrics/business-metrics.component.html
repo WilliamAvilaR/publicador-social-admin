@@ -1,0 +1,144 @@
+<div class="metrics-container">
+  <div class="page-header">
+    <h1>📈 Métricas Globales del Negocio</h1>
+    <p class="subtitle">Visión ejecutiva del estado del negocio</p>
+  </div>
+
+  <!-- Métricas Principales -->
+  <div class="main-metrics-grid">
+    <div class="metric-card primary">
+      <div class="metric-icon">👥</div>
+      <div class="metric-content">
+        <div class="metric-label">Total Usuarios Activos</div>
+        <div class="metric-value">{{ mainMetrics.totalActiveUsers.toLocaleString() }}</div>
+        <div class="metric-trend" [ngClass]="trends.totalActiveUsers.isPositive ? 'positive' : 'negative'">
+          <span>{{ trends.totalActiveUsers.isPositive ? '↑' : '↓' }}</span>
+          {{ Math.abs(trends.totalActiveUsers.change) }}% vs mes anterior
+        </div>
+      </div>
+    </div>
+
+    <div class="metric-card primary">
+      <div class="metric-icon">📄</div>
+      <div class="metric-content">
+        <div class="metric-label">Total Páginas Conectadas</div>
+        <div class="metric-value">{{ mainMetrics.totalPages.toLocaleString() }}</div>
+        <div class="metric-trend" [ngClass]="trends.totalPages.isPositive ? 'positive' : 'negative'">
+          <span>{{ trends.totalPages.isPositive ? '↑' : '↓' }}</span>
+          {{ Math.abs(trends.totalPages.change) }}% vs mes anterior
+        </div>
+      </div>
+    </div>
+
+    <div class="metric-card primary">
+      <div class="metric-icon">📝</div>
+      <div class="metric-content">
+        <div class="metric-label">Total Posts Programados</div>
+        <div class="metric-value">{{ mainMetrics.totalScheduledPosts.toLocaleString() }}</div>
+        <div class="metric-trend" [ngClass]="trends.totalScheduledPosts.isPositive ? 'positive' : 'negative'">
+          <span>{{ trends.totalScheduledPosts.isPositive ? '↑' : '↓' }}</span>
+          {{ Math.abs(trends.totalScheduledPosts.change) }}% vs mes anterior
+        </div>
+      </div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-label">Uso Promedio</div>
+      <div class="metric-value large">{{ mainMetrics.averageUsage }}%</div>
+      <div class="metric-trend" [ngClass]="trends.averageUsage.isPositive ? 'positive' : 'negative'">
+        <span>{{ trends.averageUsage.isPositive ? '↑' : '↓' }}</span>
+        {{ Math.abs(trends.averageUsage.change) }}% vs mes anterior
+      </div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-label">Churn Rate</div>
+      <div class="metric-value large">{{ mainMetrics.churn }}%</div>
+      <div class="metric-trend" [ngClass]="trends.churn.isPositive ? 'positive' : 'negative'">
+        <span>{{ trends.churn.isPositive ? '↑' : '↓' }}</span>
+        {{ Math.abs(trends.churn.change) }}% vs mes anterior
+      </div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-label">ARPU (Ingreso Promedio por Usuario)</div>
+      <div class="metric-value large">${{ mainMetrics.arpu.toFixed(2) }}</div>
+      <div class="metric-trend" [ngClass]="trends.arpu.isPositive ? 'positive' : 'negative'">
+        <span>{{ trends.arpu.isPositive ? '↑' : '↓' }}</span>
+        {{ Math.abs(trends.arpu.change) }}% vs mes anterior
+      </div>
+    </div>
+  </div>
+
+  <!-- Distribución por Plan -->
+  <div class="section-card">
+    <h2>💳 Distribución por Plan</h2>
+    <div class="plan-distribution">
+      <div class="plan-item" *ngFor="let plan of planDistribution">
+        <div class="plan-header">
+          <span class="plan-name">{{ plan.plan }}</span>
+          <span class="plan-count">{{ plan.count }} usuarios</span>
+        </div>
+        <div class="plan-bar">
+          <div class="plan-bar-fill" [style.width.%]="plan.percentage" [ngClass]="'plan-' + plan.plan.toLowerCase()">
+            <span class="plan-percentage">{{ plan.percentage }}%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Uso Mensual -->
+  <div class="section-card">
+    <h2>📊 Evolución Mensual (Últimos 6 Meses)</h2>
+    <div class="monthly-usage-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Mes</th>
+            <th>Usuarios Activos</th>
+            <th>Posts Programados</th>
+            <th>Crecimiento</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let month of monthlyUsage; let i = index">
+            <td>{{ month.month }}</td>
+            <td>{{ month.users.toLocaleString() }}</td>
+            <td>{{ month.posts.toLocaleString() }}</td>
+            <td>
+              <span class="growth-badge" *ngIf="i > 0">
+                {{ ((month.users - monthlyUsage[i-1].users) / monthlyUsage[i-1].users * 100).toFixed(1) }}%
+              </span>
+              <span *ngIf="i === 0">-</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Top Clientes -->
+  <div class="section-card">
+    <h2>🏆 Top Clientes por Uso</h2>
+    <div class="top-clients-list">
+      <div class="client-rank-item" *ngFor="let client of topClients; let i = index">
+        <div class="rank-number">#{{ i + 1 }}</div>
+        <div class="client-details">
+          <strong>{{ client.name }}</strong>
+          <span class="client-plan">{{ client.plan }}</span>
+        </div>
+        <div class="client-stats">
+          <div class="stat">
+            <span class="stat-label">Posts:</span>
+            <span class="stat-value">{{ client.posts }}</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Páginas:</span>
+            <span class="stat-value">{{ client.pages }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,6 +1,6 @@
 <div class="client-detail-container">
   <div class="header-actions">
-    <a routerLink="/dashboard/clientes" class="btn-back">← Volver a Clientes</a>
+    <a href="" class="btn-back" (click)="goBack(); $event.preventDefault()">← Volver a Clientes</a>
     <div class="action-buttons" *ngIf="client">
       <button class="btn-action btn-warning" (click)="forceLogout()">Forzar Logout</button>
       <button class="btn-action btn-danger" (click)="resetFacebookTokens()">Resetear Tokens Facebook</button>
@@ -39,9 +39,9 @@
         <div class="editable-badge">
           <label>Plan:</label>
           <select 
-            [value]="client.planCode" 
+            [(ngModel)]="client.planCode"
+            (ngModelChange)="updatePlan($event)"
             [disabled]="isUpdatingPlan || isLoadingPlans"
-            (change)="updatePlan($any($event.target).value)"
             class="plan-select"
             [ngClass]="getPlanClass(client.planCode)">
             <option *ngIf="isLoadingPlans" value="">Cargando planes...</option>
@@ -54,10 +54,10 @@
         <div class="editable-badge">
           <label>Estado:</label>
           <select 
-            [value]="client.status" 
+            [(ngModel)]="client.status"
+            (ngModelChange)="updateStatus($event)"
             [disabled]="isUpdatingStatus || isLoadingStatuses"
-            (change)="updateStatus($any($event.target).value)"
-            class="status-select"
+            class="status-select status-badge"
             [ngClass]="getStatusClass(client.status)">
             <option *ngIf="isLoadingStatuses" value="">Cargando estados...</option>
             <option *ngFor="let status of availableStatuses" [value]="status.value">

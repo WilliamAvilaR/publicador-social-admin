@@ -160,19 +160,19 @@ export class ClientsListComponent implements OnInit {
           activeUsersCount: t.ActiveUsersCount ?? t.activeUsersCount ?? 0
         }));
         
-        // La API devuelve "Total" con mayúscula
-        this.totalCount = data.Total ?? data.count ?? 0;
+        // Total de registros (soporta PascalCase y camelCase)
+        this.totalCount = data.Total ?? data.total ?? data.count ?? 0;
         
-        // Calcular totalPages desde meta si está disponible, o calcularlo manualmente
+        // Calcular totalPages desde meta si está disponible, o desde la propia data
         if (response.meta) {
           this.totalPages = response.meta.totalPages;
           this.currentPage = response.meta.currentPage;
-        } else if (data.TotalPages !== undefined) {
-          // Usar TotalPages de la respuesta si está disponible
-          this.totalPages = data.TotalPages;
-          this.currentPage = data.Page ?? 1;
+        } else if (data.TotalPages !== undefined || data.totalPages !== undefined) {
+          // Usar TotalPages/totalPages de la respuesta si está disponible
+          this.totalPages = data.TotalPages ?? data.totalPages;
+          this.currentPage = data.Page ?? data.page ?? 1;
         } else {
-          // Calcular totalPages manualmente si meta no está disponible
+          // Calcular totalPages manualmente si meta/data no lo traen explícito
           this.totalPages = Math.ceil(this.totalCount / this.pageSize);
         }
         this.isLoading = false;

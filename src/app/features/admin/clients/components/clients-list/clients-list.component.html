@@ -9,42 +9,44 @@
     ⚠️ {{ errorMessage }}
   </div>
 
-  <!-- Estado de carga -->
+  <!-- Filtros siempre visibles -->
+  <div class="filters-bar">
+    <div class="search-box">
+      <input 
+        type="text" 
+        placeholder="Buscar por nombre, email..." 
+        [(ngModel)]="searchTerm"
+        (keyup.enter)="applyFilters()" />
+      <button class="btn-search" (click)="applyFilters()">🔍 Buscar</button>
+    </div>
+    <div class="filter-group">
+      <select [(ngModel)]="selectedStatus" (change)="applyFilters()" [disabled]="isLoadingStatuses">
+        <option value="">Todos los estados</option>
+        <option *ngIf="isLoadingStatuses" value="">Cargando estados...</option>
+        <option *ngFor="let status of availableStatuses" [value]="status.value">
+          {{ status.label }}
+        </option>
+      </select>
+      <select [(ngModel)]="selectedPlanCode" (change)="applyFilters()">
+        <option value="">Todos los planes</option>
+        <!-- Opciones dinámicas cargadas desde GET /api/admin/plans -->
+        <option 
+          *ngFor="let plan of availablePlans" 
+          [value]="plan.Code">
+          {{ plan.Name }} ({{ plan.Code }})
+        </option>
+      </select>
+      <button class="btn-clear" (click)="clearFilters()">Limpiar Filtros</button>
+    </div>
+  </div>
+
+  <!-- Estado de carga solo para la tabla -->
   <div class="loading-state" *ngIf="isLoading">
     <p>Cargando clientes...</p>
   </div>
 
-  <!-- Contenido principal -->
+  <!-- Contenido principal: tabla + stats -->
   <div *ngIf="!isLoading && !errorMessage">
-    <div class="filters-bar">
-      <div class="search-box">
-        <input 
-          type="text" 
-          placeholder="Buscar por nombre, email..." 
-          [(ngModel)]="searchTerm"
-          (keyup.enter)="applyFilters()" />
-        <button class="btn-search" (click)="applyFilters()">🔍 Buscar</button>
-      </div>
-      <div class="filter-group">
-        <select [(ngModel)]="selectedStatus" (change)="applyFilters()" [disabled]="isLoadingStatuses">
-          <option value="">Todos los estados</option>
-          <option *ngIf="isLoadingStatuses" value="">Cargando estados...</option>
-          <option *ngFor="let status of availableStatuses" [value]="status.value">
-            {{ status.label }}
-          </option>
-        </select>
-        <select [(ngModel)]="selectedPlanCode" (change)="applyFilters()">
-          <option value="">Todos los planes</option>
-          <!-- Opciones dinámicas cargadas desde GET /api/admin/plans -->
-          <option 
-            *ngFor="let plan of availablePlans" 
-            [value]="plan.Code">
-            {{ plan.Name }} ({{ plan.Code }})
-          </option>
-        </select>
-        <button class="btn-clear" (click)="clearFilters()">Limpiar Filtros</button>
-      </div>
-    </div>
 
   <div class="table-container">
     <table class="clients-table">

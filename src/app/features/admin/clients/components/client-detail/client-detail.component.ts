@@ -1,5 +1,6 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
-import { CommonModule, DatePipe } from '@angular/common';
+import { CommonModule, DatePipe, Location } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { TenantsService } from '../../services/tenants.service';
 import { PlansService } from '../../../plans/services/plans.service';
@@ -9,7 +10,7 @@ import { Plan } from '../../../plans/models/plan.model';
 @Component({
   selector: 'app-client-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule, DatePipe],
+  imports: [CommonModule, RouterModule, DatePipe, FormsModule],
   templateUrl: './client-detail.component.html',
   styleUrl: './client-detail.component.scss'
 })
@@ -32,10 +33,18 @@ export class ClientDetailComponent implements OnInit {
     private route: ActivatedRoute,
     private tenantsService: TenantsService,
     private plansService: PlansService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private location: Location
   ) {
     const id = this.route.snapshot.paramMap.get('id');
     this.clientId = id ? parseInt(id, 10) : null;
+  }
+
+  /**
+   * Vuelve a la vista anterior (por ejemplo, la página de clientes en la página actual de la paginación)
+   */
+  goBack(): void {
+    this.location.back();
   }
 
   ngOnInit(): void {
@@ -278,10 +287,6 @@ export class ClientDetailComponent implements OnInit {
     
     // Convertir a minúsculas para la API
     const statusForApi = newStatus.toLowerCase();
-    
-    if (statusForApi === this.client.status) {
-      return; // No hacer nada si es el mismo estado
-    }
 
     const statusDisplay = this.getStatusDisplayName(statusForApi);
     const currentStatusDisplay = this.getStatusDisplayName(this.client.status);
@@ -337,10 +342,6 @@ export class ClientDetailComponent implements OnInit {
     
     // Convertir a minúsculas para la API
     const planCode = newPlanCode.toLowerCase();
-    
-    if (planCode === this.client.planCode?.toLowerCase()) {
-      return; // No hacer nada si es el mismo plan
-    }
 
     // Obtener el nombre del plan para mostrar
     const plan = this.availablePlans.find(p => p.Code.toLowerCase() === planCode);

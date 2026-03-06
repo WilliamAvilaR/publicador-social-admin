@@ -137,25 +137,25 @@
         color: #7b1fa2;
       }
 
-      // Estilos para status
+      // Estilos para status (alineados con la tabla de clientes)
       &.status-active {
         background-color: var(--success-bg);
         color: var(--success-text);
       }
 
       &.status-suspended {
-        background-color: #ffebee;
-        color: #c62828;
+        background-color: var(--warning-bg);
+        color: var(--warning-text);
       }
 
       &.status-trial {
-        background-color: #fff3e0;
-        color: #e65100;
+        background-color: var(--info-bg);
+        color: var(--info-text);
       }
 
       &.status-overdue {
-        background-color: #fce4ec;
-        color: #880e4f;
+        background-color: var(--error-bg);
+        color: var(--error-text);
       }
     }
 
@@ -184,9 +184,33 @@
   color: var(--accent-primary);
 }
 
-.status-badge.status-active {
-  background-color: var(--success-bg);
-  color: var(--success-text);
+/* Badges de estado en el detalle del cliente */
+.status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+
+  &.status-active {
+    background-color: var(--success-bg);
+    color: var(--success-text);
+  }
+
+  &.status-trial {
+    background-color: var(--info-bg);
+    color: var(--info-text);
+  }
+
+  &.status-suspended {
+    background-color: var(--warning-bg);
+    color: var(--warning-text);
+  }
+
+  &.status-inactive {
+    background-color: var(--border-primary);
+    color: var(--text-secondary);
+  }
 }
 
 .info-grid {

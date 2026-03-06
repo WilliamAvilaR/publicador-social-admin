@@ -208,6 +208,12 @@
     color: var(--warning-text);
   }
 
+  // Estado Inactivo (visual neutro pero diferenciado)
+  &.status-inactive {
+    background-color: var(--border-primary);
+    color: var(--text-secondary);
+  }
+
   &.status-overdue {
     background-color: var(--error-bg);
     color: var(--error-text);

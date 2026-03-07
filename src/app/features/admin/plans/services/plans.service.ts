@@ -10,6 +10,7 @@ import {
   UpdatePlanRequest,
   UpdatePlanFeaturesRequest,
   UpdatePlanLimitsRequest,
+  PlanDefinitionsResponse,
   ApiError
 } from '../models/plan.model';
 
@@ -96,6 +97,17 @@ export class PlansService {
    */
   updatePlanLimits(planId: number, limits: UpdatePlanLimitsRequest): Observable<PlanOperationResponse> {
     return this.http.put<PlanOperationResponse>(`${this.apiUrl}/${planId}/limits`, limits).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  /**
+   * Obtiene las definiciones de features y limits para crear planes
+   * Incluye las dependencias automáticas entre features y limits
+   * @returns Observable con features y limits con sus dependencias
+   */
+  getPlanDefinitions(): Observable<PlanDefinitionsResponse> {
+    return this.http.get<PlanDefinitionsResponse>(`${this.apiUrl}/definitions`).pipe(
       catchError(this.handleError)
     );
   }

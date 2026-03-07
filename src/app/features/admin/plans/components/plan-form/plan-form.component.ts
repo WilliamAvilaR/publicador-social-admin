@@ -11,13 +11,12 @@ import {
   UpdatePlanFeaturesRequest,
   UpdatePlanLimitsRequest,
   PlanFeature,
-  PlanLimit
+  PlanLimit,
+  PlanDefinitionsResponse
 } from '../../models/plan.model';
 import {
   Feature,
-  Limit,
-  FeaturesCatalogResponse,
-  LimitsCatalogResponse
+  Limit
 } from '../../../features/models/feature.model';
 
 @Component({
@@ -58,12 +57,13 @@ export class PlanFormComponent implements OnInit {
   featuresByCategory: { [key: string]: Feature[] } = {};
   limitsByCategory: { [key: string]: Limit[] } = {};
 
-  // Tabs
-  activeTab: 'basic' | 'features' | 'limits' = 'basic';
+  // Wizard steps
+  currentStep: number = 1;
+  totalSteps: number = 4; // Paso 1: Info, Paso 2: Features, Paso 3: Limits, Paso 4: Preview
+  showPreview: boolean = false;
 
   constructor(
     private plansService: PlansService,
-    private featuresService: FeaturesService,
     private router: Router,
     private route: ActivatedRoute
   ) {}
@@ -81,7 +81,7 @@ export class PlanFormComponent implements OnInit {
       }
     });
 
-    this.loadCatalogs();
+    this.loadPlanDefinitions();
   }
 
   loadPlan(): void {
@@ -158,65 +158,55 @@ export class PlanFormComponent implements OnInit {
     });
   }
 
-  loadCatalogs(): void {
+  /**
+   * Carga las definiciones de features y limits desde el nuevo endpoint
+   * que incluye las dependencias automáticas
+   */
+  loadPlanDefinitions(): void {
     this.isLoadingCatalog = true;
 
-    // Cargar catálogo de features
-    this.featuresService.getFeaturesCatalog().subscribe({
-      next: (response: FeaturesCatalogResponse | any) => {
+    this.plansService.getPlanDefinitions().subscribe({
+      next: (response: PlanDefinitionsResponse | any) => {
         const data: any = response.data || {};
 
-        // La documentación decía PascalCase (All/Modules/Networks),
-        // pero el backend real está devolviendo camelCase (all/modules/networks).
-        const rawAll: any[] = data.All || data.all || [];
-        const rawModules: any[] = data.Modules || data.modules || [];
-        const rawNetworks: any[] = data.Networks || data.networks || [];
+        // Normalizar features del nuevo endpoint (camelCase)
+        const rawFeatures: any[] = data.features || data.Features || [];
+        
+        // Función para normalizar categorías a los valores que espera el HTML
+        const normalizeCategory = (cat: string): string => {
+          const lower = cat?.toLowerCase() || 'module';
+          if (lower === 'modules' || lower === 'module') return 'module';
+          if (lower === 'networks' || lower === 'network') return 'network';
+          return lower;
+        };
+        
+        this.featuresCatalog = rawFeatures.map((f: any, index: number) => ({
+          Id: index + 1, // El nuevo endpoint no incluye Id, generamos uno
+          Key: f.key ?? f.Key,
+          Name: f.name ?? f.Name,
+          Description: '', // El nuevo endpoint no incluye Description
+          Category: normalizeCategory(f.category ?? f.Category),
+          DisplayOrder: index + 1
+        }));
 
-        // Si "all" viene vacío, lo construimos concatenando modules + networks
-        const combined: any[] =
-          rawAll && rawAll.length > 0 ? rawAll : [...rawModules, ...rawNetworks];
-
-        // Normalizar cada feature al modelo Feature (PascalCase)
-        this.featuresCatalog = combined.map((f: any) => ({
-          Id: f.Id ?? f.id,
-          Key: f.Key ?? f.key,
-          Name: f.Name ?? f.name,
-          Description: f.Description ?? f.description,
-          Category: f.Category ?? f.category,
-          DisplayOrder: f.DisplayOrder ?? f.displayOrder
+        // Normalizar limits del nuevo endpoint (camelCase) con dependsOnFeatures
+        const rawLimits: any[] = data.limits || data.Limits || [];
+        this.limitsCatalog = rawLimits.map((l: any) => ({
+          Key: l.key ?? l.Key,
+          Name: l.name ?? l.Name,
+          Description: '', // El nuevo endpoint no incluye Description
+          Category: l.category ?? l.Category,
+          Unit: '', // El nuevo endpoint no incluye Unit
+          DependsOnFeatures: l.dependsOnFeatures ?? l.DependsOnFeatures ?? []
         }));
 
         this.organizeFeaturesByCategory();
-        this.isLoadingCatalog = false;
-      },
-      error: (error) => {
-        console.error('Error al cargar catálogo de features:', error);
-        this.isLoadingCatalog = false;
-      }
-    });
-
-    // Cargar catálogo de límites
-    this.featuresService.getLimitsCatalog().subscribe({
-      next: (response: LimitsCatalogResponse | any) => {
-        const data: any = response.data || {};
-
-        // La documentación decía PascalCase (Limits/GroupedByCategory...)
-        // pero el backend real devuelve camelCase (limits/groupedByCategory...)
-        const rawLimits: any[] = data.Limits || data.limits || [];
-
-        // Normalizar cada límite al modelo Limit (PascalCase)
-        this.limitsCatalog = rawLimits.map((l: any) => ({
-          Key: l.Key ?? l.key,
-          Name: l.Name ?? l.name,
-          Description: l.Description ?? l.description,
-          Category: l.Category ?? l.category,
-          Unit: l.Unit ?? l.unit
-        }));
-
         this.organizeLimitsByCategory();
+        this.isLoadingCatalog = false;
       },
       error: (error) => {
-        console.error('Error al cargar catálogo de límites:', error);
+        console.error('Error al cargar definiciones de planes:', error);
+        this.isLoadingCatalog = false;
       }
     });
   }
@@ -290,16 +280,8 @@ export class PlanFormComponent implements OnInit {
   }
 
   validateForm(): boolean {
-    if (!this.formData.Code.trim()) {
-      this.errorMessage = 'El código del plan es requerido';
-      return false;
-    }
-    if (!this.formData.Name.trim()) {
-      this.errorMessage = 'El nombre del plan es requerido';
-      return false;
-    }
-    if (this.formData.IsPaid && (this.formData.Price === null || this.formData.Price < 0)) {
-      this.errorMessage = 'El precio es requerido para planes de pago';
+    // Validar todos los pasos
+    if (!this.validateCurrentStep()) {
       return false;
     }
     return true;
@@ -402,8 +384,140 @@ export class PlanFormComponent implements OnInit {
     });
   }
 
-  setActiveTab(tab: 'basic' | 'features' | 'limits'): void {
-    this.activeTab = tab;
+  /**
+   * Navegación del wizard
+   */
+  nextStep(): void {
+    if (this.validateCurrentStep()) {
+      if (this.currentStep < this.totalSteps - 1) {
+        this.currentStep++;
+      } else {
+        // Último paso: mostrar preview
+        this.showPreview = true;
+        this.currentStep = this.totalSteps;
+      }
+    }
+  }
+
+  previousStep(): void {
+    if (this.currentStep > 1) {
+      this.currentStep--;
+      this.showPreview = false;
+    }
+  }
+
+  goToStep(step: number): void {
+    if (step >= 1 && step <= this.totalSteps) {
+      // Solo permitir ir a pasos anteriores o al siguiente si el actual está validado
+      if (step < this.currentStep || (step === this.currentStep + 1 && this.validateCurrentStep())) {
+        this.currentStep = step;
+        this.showPreview = step === this.totalSteps;
+      }
+    }
+  }
+
+  /**
+   * Valida el paso actual antes de avanzar
+   */
+  validateCurrentStep(): boolean {
+    if (this.currentStep === 1) {
+      // Validar información básica
+      if (!this.formData.Code.trim()) {
+        this.errorMessage = 'El código del plan es requerido';
+        return false;
+      }
+      if (!this.formData.Name.trim()) {
+        this.errorMessage = 'El nombre del plan es requerido';
+        return false;
+      }
+      if (this.formData.IsPaid && (this.formData.Price === null || this.formData.Price < 0)) {
+        this.errorMessage = 'El precio es requerido para planes de pago';
+        return false;
+      }
+      this.errorMessage = '';
+      return true;
+    }
+    // Los pasos 2 y 3 no requieren validación obligatoria (pueden estar vacíos)
+    this.errorMessage = '';
+    return true;
+  }
+
+  /**
+   * Obtiene los límites relacionados con una feature específica
+   * Usa DependsOnFeatures del nuevo endpoint
+   */
+  getRelatedLimits(featureKey: string): Limit[] {
+    return this.limitsCatalog.filter(limit => 
+      limit.DependsOnFeatures?.includes(featureKey) || false
+    );
+  }
+
+  /**
+   * Verifica si un límite debe mostrarse basado en las features activas
+   * Usa DependsOnFeatures del nuevo endpoint
+   */
+  shouldShowLimit(limit: Limit): boolean {
+    // Si el límite no tiene dependencias, siempre mostrarlo (límites globales)
+    if (!limit.DependsOnFeatures || limit.DependsOnFeatures.length === 0) {
+      return true;
+    }
+    
+    // Si tiene dependencias, verificar si alguna feature relacionada está activa
+    return limit.DependsOnFeatures.some(featureKey => 
+      this.selectedFeatures.get(featureKey) === true
+    );
+  }
+
+  /**
+   * Obtiene el hint para una feature específica
+   */
+  getFeatureHint(featureKey: string): string {
+    const relatedLimits = this.getRelatedLimits(featureKey);
+    if (relatedLimits.length === 0) {
+      return '';
+    }
+    
+    const limitNames = relatedLimits.map(l => `• ${l.Name}`).join('\n');
+    return `Al habilitarlo podrás configurar:\n${limitNames}`;
+  }
+
+  /**
+   * Obtiene las líneas del hint para renderizar en el HTML
+   */
+  getFeatureHintLines(featureKey: string): string[] {
+    const hint = this.getFeatureHint(featureKey);
+    if (!hint) {
+      return [];
+    }
+    return hint.split('\n');
+  }
+
+  /**
+   * Obtiene el número de features habilitadas
+   */
+  get enabledFeaturesCount(): number {
+    return Array.from(this.selectedFeatures.values()).filter(v => v).length;
+  }
+
+  /**
+   * Verifica si hay features habilitadas
+   */
+  get hasEnabledFeatures(): boolean {
+    return this.enabledFeaturesCount > 0;
+  }
+
+  /**
+   * Obtiene el número de límites configurados (no nulos)
+   */
+  get configuredLimitsCount(): number {
+    return Array.from(this.selectedLimits.values()).filter(v => v !== null && v !== undefined).length;
+  }
+
+  /**
+   * Verifica si hay límites configurados
+   */
+  get hasConfiguredLimits(): boolean {
+    return this.configuredLimitsCount > 0;
   }
 
   cancel(): void {

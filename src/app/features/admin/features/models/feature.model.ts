@@ -31,6 +31,7 @@ export interface Limit {
   Description: string;
   Category: string;
   Unit: string;
+  DependsOnFeatures?: string[]; // Features de las que depende este límite (del nuevo endpoint)
 }
 
 // Catálogo de features (la API usa PascalCase)

@@ -1,11 +1,4 @@
 <div class="plan-form-container">
-  <div class="page-header">
-    <h1>{{ isEditMode ? '✏️ Editar Plan' : '➕ Crear Nuevo Plan' }}</h1>
-    <p class="subtitle">
-      {{ isEditMode ? 'Modifica la información del plan' : 'Completa la información para crear un nuevo plan' }}
-    </p>
-  </div>
-
   <!-- Mensajes de error y éxito -->
   <div class="error-message" *ngIf="errorMessage">
     ⚠️ {{ errorMessage }}
@@ -19,33 +12,35 @@
     <p>Cargando plan...</p>
   </div>
 
-  <!-- Formulario -->
+  <!-- Formulario Wizard -->
   <div *ngIf="!isLoading" class="form-wrapper">
-    <!-- Tabs -->
-    <div class="tabs">
-      <button 
-        class="tab-button" 
-        [class.active]="activeTab === 'basic'"
-        (click)="setActiveTab('basic')">
-        📋 Información Básica
-      </button>
-      <button 
-        class="tab-button" 
-        [class.active]="activeTab === 'features'"
-        (click)="setActiveTab('features')">
-        ⚙️ Features ({{ selectedFeatures.size }})
-      </button>
-      <button 
-        class="tab-button" 
-        [class.active]="activeTab === 'limits'"
-        (click)="setActiveTab('limits')">
-        📊 Límites ({{ selectedLimits.size }})
-      </button>
+    <!-- Indicador de pasos -->
+    <div class="wizard-steps">
+      <div class="step-indicator" [class.active]="currentStep >= 1" [class.completed]="currentStep > 1">
+        <div class="step-number">1</div>
+        <div class="step-label">Información</div>
+      </div>
+      <div class="step-connector" [class.completed]="currentStep > 1"></div>
+      <div class="step-indicator" [class.active]="currentStep >= 2" [class.completed]="currentStep > 2">
+        <div class="step-number">2</div>
+        <div class="step-label">Features</div>
+      </div>
+      <div class="step-connector" [class.completed]="currentStep > 2"></div>
+      <div class="step-indicator" [class.active]="currentStep >= 3" [class.completed]="currentStep > 3">
+        <div class="step-number">3</div>
+        <div class="step-label">Límites</div>
+      </div>
+      <div class="step-connector" [class.completed]="currentStep > 3"></div>
+      <div class="step-indicator" [class.active]="currentStep >= 4">
+        <div class="step-number">4</div>
+        <div class="step-label">Preview</div>
+      </div>
     </div>
 
-    <!-- Tab: Información Básica -->
-    <div class="tab-content" *ngIf="activeTab === 'basic'">
-      <form class="plan-form" (ngSubmit)="savePlan()">
+    <!-- Paso 1: Información del Plan -->
+    <div class="wizard-step" *ngIf="currentStep === 1">
+      <h2 class="step-title">Información del Plan</h2>
+      <form class="plan-form" (ngSubmit)="nextStep()">
         <div class="form-group">
           <label for="code">Código del Plan *</label>
           <input 
@@ -133,20 +128,21 @@
       </form>
     </div>
 
-    <!-- Tab: Features -->
-    <div class="tab-content" *ngIf="activeTab === 'features'">
+    <!-- Paso 2: Funcionalidades del Plan -->
+    <div class="wizard-step" *ngIf="currentStep === 2">
+      <h2 class="step-title">Funcionalidades del Plan</h2>
+      <p class="step-description">
+        Selecciona las features que estarán disponibles en este plan. 
+        Al habilitar una feature, podrás configurar sus límites en el siguiente paso.
+      </p>
+
       <div class="catalog-loading" *ngIf="isLoadingCatalog">
         <p>Cargando catálogo de features...</p>
       </div>
 
       <div *ngIf="!isLoadingCatalog" class="features-section">
-        <p class="section-description">
-          Selecciona las features que estarán disponibles en este plan. 
-          Puedes activar o desactivar cada feature individualmente.
-        </p>
-
         <div *ngFor="let category of getCategoryKeys(featuresByCategory)" class="category-group">
-          <h3 class="category-title">{{ category === 'module' ? 'Módulos' : 'Redes Sociales' }}</h3>
+          <h3 class="category-title">{{ category === 'module' ? 'Módulos' : category === 'network' ? 'Redes Sociales' : category }}</h3>
           <div class="features-grid">
             <div 
               *ngFor="let feature of featuresByCategory[category]" 
@@ -164,6 +160,13 @@
                 <div class="feature-name">{{ feature.Name }}</div>
                 <div class="feature-key">{{ feature.Key }}</div>
                 <div class="feature-description">{{ feature.Description }}</div>
+                <!-- Hint sobre límites relacionados -->
+                <div class="feature-hint" *ngIf="getFeatureHint(feature.Key)">
+                  <span class="hint-icon">💡</span>
+                  <div class="hint-text">
+                    <div *ngFor="let line of getFeatureHintLines(feature.Key)">{{ line }}</div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -175,21 +178,27 @@
       </div>
     </div>
 
-    <!-- Tab: Límites -->
-    <div class="tab-content" *ngIf="activeTab === 'limits'">
+    <!-- Paso 3: Límites del Plan -->
+    <div class="wizard-step" *ngIf="currentStep === 3">
+      <h2 class="step-title">Límites del Plan</h2>
+      <p class="step-description">
+        Configura los límites para este plan. Deja el campo vacío o escribe "0" para establecer como ilimitado.
+        Solo se muestran los límites relacionados con las features que habilitaste.
+      </p>
+
       <div class="catalog-loading" *ngIf="isLoadingCatalog">
         <p>Cargando catálogo de límites...</p>
       </div>
 
       <div *ngIf="!isLoadingCatalog" class="limits-section">
-        <p class="section-description">
-          Configura los límites para este plan. Deja el campo vacío o escribe "0" para establecer como ilimitado.
-        </p>
-
-        <div *ngFor="let category of getCategoryKeys(limitsByCategory)" class="category-group">
+        <!-- Límites Globales -->
+        <div class="category-group" *ngFor="let category of getCategoryKeys(limitsByCategory)">
           <h3 class="category-title">{{ category }}</h3>
           <div class="limits-grid">
-            <div *ngFor="let limit of limitsByCategory[category]" class="limit-item">
+            <ng-container *ngFor="let limit of limitsByCategory[category]">
+              <div 
+                *ngIf="shouldShowLimit(limit)"
+                class="limit-item">
               <div class="limit-info">
                 <div class="limit-name">{{ limit.Name }}</div>
                 <div class="limit-key">{{ limit.Key }}</div>
@@ -206,6 +215,7 @@
                 <span class="limit-unit">{{ limit.Unit }}</span>
               </div>
             </div>
+            </ng-container>
           </div>
         </div>
 
@@ -215,18 +225,112 @@
       </div>
     </div>
 
-    <!-- Botones de acción -->
-    <div class="form-actions">
-      <button type="button" class="btn-cancel" (click)="cancel()" [disabled]="isSaving">
-        Cancelar
-      </button>
+    <!-- Paso 4: Preview del Plan -->
+    <div class="wizard-step" *ngIf="currentStep === 4 && showPreview">
+      <h2 class="step-title">Vista Previa del Plan</h2>
+      <p class="step-description">
+        Revisa la configuración del plan antes de guardarlo.
+      </p>
+
+      <div class="plan-preview">
+        <div class="preview-section">
+          <h3>Información Básica</h3>
+          <div class="preview-item">
+            <strong>Código:</strong> {{ formData.Code }}
+          </div>
+          <div class="preview-item">
+            <strong>Nombre:</strong> {{ formData.Name }}
+          </div>
+          <div class="preview-item" *ngIf="formData.Description">
+            <strong>Descripción:</strong> {{ formData.Description }}
+          </div>
+          <div class="preview-item">
+            <strong>Precio:</strong> 
+            <span *ngIf="formData.IsPaid && formData.Price">${{ formData.Price }}</span>
+            <span *ngIf="!formData.IsPaid">Gratis</span>
+          </div>
+          <div class="preview-item">
+            <strong>Estado:</strong> 
+            <span *ngIf="formData.IsActive">Activo</span>
+            <span *ngIf="!formData.IsActive">Inactivo</span>
+          </div>
+          <div class="preview-item" *ngIf="formData.IsDefault">
+            <strong>Plan por Defecto:</strong> Sí
+          </div>
+        </div>
+
+        <div class="preview-section">
+          <h3>Features Habilitadas ({{ enabledFeaturesCount }})</h3>
+          <div class="preview-features">
+            <ng-container *ngFor="let feature of featuresCatalog">
+              <div 
+                *ngIf="isFeatureEnabled(feature.Key)"
+                class="preview-feature">
+                ✓ {{ feature.Name }}
+              </div>
+            </ng-container>
+            <div *ngIf="!hasEnabledFeatures" class="preview-empty">
+              No hay features habilitadas
+            </div>
+          </div>
+        </div>
+
+        <div class="preview-section">
+          <h3>Límites Configurados</h3>
+          <div class="preview-limits">
+            <ng-container *ngFor="let limit of limitsCatalog">
+              <div 
+                *ngIf="getLimitValue(limit.Key)"
+                class="preview-limit">
+                <strong>{{ limit.Name }}:</strong> 
+                {{ getLimitValue(limit.Key) }} {{ limit.Unit }}
+              </div>
+            </ng-container>
+            <div *ngIf="!hasConfiguredLimits" class="preview-empty">
+              No hay límites configurados (todos ilimitados)
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Botones de navegación del wizard -->
+    <div class="wizard-actions">
       <button 
         type="button" 
-        class="btn-save" 
-        (click)="savePlan()" 
+        class="btn-cancel" 
+        (click)="cancel()" 
         [disabled]="isSaving">
-        {{ isSaving ? 'Guardando...' : (isEditMode ? 'Actualizar Plan' : 'Crear Plan') }}
+        Cancelar
       </button>
+      
+      <div class="wizard-nav-buttons">
+        <button 
+          type="button" 
+          class="btn-previous" 
+          (click)="previousStep()" 
+          [disabled]="currentStep === 1 || isSaving">
+          ← Anterior
+        </button>
+        
+        <button 
+          type="button" 
+          class="btn-next" 
+          (click)="nextStep()" 
+          [disabled]="currentStep === totalSteps || isSaving"
+          *ngIf="currentStep < totalSteps">
+          Siguiente →
+        </button>
+        
+        <button 
+          type="button" 
+          class="btn-save" 
+          (click)="savePlan()" 
+          [disabled]="isSaving"
+          *ngIf="currentStep === totalSteps">
+          {{ isSaving ? 'Guardando...' : (isEditMode ? 'Actualizar Plan' : 'Crear Plan') }}
+        </button>
+      </div>
     </div>
   </div>
 </div>

@@ -17,10 +17,35 @@
   top: 0;
   z-index: 100;
 
-  h1 {
-    color: var(--text-primary);
-    font-size: 24px;
-    margin: 0;
+  .header-title-section {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+
+    .app-name {
+      color: var(--text-secondary);
+      font-size: 18px;
+      font-weight: 500;
+    }
+
+    .page-title {
+      color: var(--text-primary);
+      font-size: 24px;
+      font-weight: 600;
+      position: relative;
+      padding-left: 16px;
+
+      &::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 2px;
+        height: 24px;
+        background-color: var(--border-primary);
+      }
+    }
   }
 
   .user-info {
@@ -128,7 +153,16 @@
 
 .dashboard-content {
   flex: 1;
-  padding: 40px;
+  padding: 10px;
   overflow-y: auto;
   height: calc(100vh - 80px);
+
+  // Padding responsivo para diferentes tamaños de pantalla
+  @media (min-width: 768px) {
+    padding:10px;
+  }
+
+  @media (min-width: 1200px) {
+    padding: 10px;
+  }
 }

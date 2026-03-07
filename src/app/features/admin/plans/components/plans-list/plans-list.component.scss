@@ -2,26 +2,10 @@
   padding: 30px;
 }
 
-.page-header {
-  margin-bottom: 30px;
-
-  .header-content {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 20px;
-  }
-
-  h1 {
-    color: var(--text-primary);
-    font-size: 28px;
-    margin-bottom: 8px;
-  }
-
-  .subtitle {
-    color: var(--text-secondary);
-    font-size: 14px;
-  }
+.page-actions {
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: flex-end;
 
   .btn-create {
     padding: 12px 24px;

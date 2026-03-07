@@ -125,3 +125,27 @@ export interface PlanOperationResponse {
   data: PlanDetail & { message?: string };
   success: boolean;
 }
+
+// Feature del nuevo endpoint de definiciones (camelCase)
+export interface PlanDefinitionFeature {
+  key: string;
+  name: string;
+  category: string; // "Modules" o "Networks"
+}
+
+// Límite del nuevo endpoint de definiciones (camelCase)
+export interface PlanDefinitionLimit {
+  key: string;
+  name: string;
+  category: string; // "General", "Facebook", etc.
+  dependsOnFeatures: string[]; // Array de feature keys
+}
+
+// Respuesta del endpoint de definiciones de planes
+export interface PlanDefinitionsResponse {
+  data: {
+    features: PlanDefinitionFeature[];
+    limits: PlanDefinitionLimit[];
+  };
+  success: boolean;
+}

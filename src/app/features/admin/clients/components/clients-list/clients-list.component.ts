@@ -41,7 +41,8 @@ export class ClientsListComponent implements OnInit {
   // Valores estables para evitar parpadeo durante la carga
   stableActiveClients: number = 0;
   stableTrialClients: number = 0;
-  stableTotalActiveUsers: number = 0;
+  stableSuspendedClients: number = 0;
+  stableInactiveClients: number = 0;
 
   constructor(
     private tenantsService: TenantsService,
@@ -53,33 +54,17 @@ export class ClientsListComponent implements OnInit {
   ngOnInit(): void {
     // Leer query params para restaurar paginación y filtros
     this.route.queryParams.subscribe(params => {
-      // Restaurar paginación
-      if (params['page']) {
-        const page = parseInt(params['page'], 10);
-        if (page > 0) {
-          this.currentPage = page;
-        }
-      }
-      
-      if (params['pageSize']) {
-        const pageSize = parseInt(params['pageSize'], 10);
-        if (pageSize > 0) {
-          this.pageSize = pageSize;
-        }
-      }
-      
-      // Restaurar filtros
-      if (params['search']) {
-        this.searchTerm = params['search'];
-      }
-      
-      if (params['status']) {
-        this.selectedStatus = params['status'];
-      }
-      
-      if (params['planCode']) {
-        this.selectedPlanCode = params['planCode'];
-      }
+      // Restaurar paginación (con valores por defecto cuando no hay query param)
+      const page = parseInt(params['page'], 10);
+      this.currentPage = Number.isFinite(page) && page > 0 ? page : 1;
+
+      const pageSize = parseInt(params['pageSize'], 10);
+      this.pageSize = Number.isFinite(pageSize) && pageSize > 0 ? pageSize : 10;
+
+      // Restaurar filtros (si no existen en URL, se limpian)
+      this.searchTerm = params['search'] ?? '';
+      this.selectedStatus = params['status'] ?? '';
+      this.selectedPlanCode = params['planCode'] ?? '';
       
       // Cargar datos
       this.loadPlans();
@@ -111,13 +96,8 @@ export class ClientsListComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error al cargar estados para el filtro:', error);
-        // En caso de error, usar valores por defecto
-        this.availableStatuses = [
-          { value: 'Active', label: 'Activo' },
-          { value: 'Suspended', label: 'Suspendido' },
-          { value: 'Trial', label: 'Prueba' },
-          { value: 'Inactive', label: 'Inactivo' }
-        ];
+        // Sin fallback local: si falla la API, no se cargan estados
+        this.availableStatuses = [];
         this.isLoadingStatuses = false;
       }
     });
@@ -185,13 +165,15 @@ export class ClientsListComponent implements OnInit {
         const data: any = response.data || {};
         
         // La API devuelve "Tenants" con mayúscula, mapear a camelCase
-        const rawTenants: any[] = data.Tenants || data.tenants || [];
+        const rawTenants = data.Tenants ?? data.tenants ?? [];
+        const tenantsArray: any[] = Array.isArray(rawTenants) ? rawTenants : [];
         
         // Opción 1: Mantener datos anteriores - Solo actualizar cuando los datos estén listos
         // NO limpiar this.clients aquí, se actualiza directamente
-        this.clients = rawTenants.map((t: any) => ({
+        this.clients = tenantsArray.map((t: any) => ({
           tenantId: t.TenantId ?? t.tenantId ?? 0,
           name: t.Name ?? t.name ?? '',
+          email: t.Email ?? t.email ?? t.OwnerEmail ?? t.ownerEmail ?? t.UserEmail ?? t.userEmail ?? '',
           slug: t.Slug ?? t.slug ?? '',
           description: t.Description ?? t.description ?? '',
           planCode: t.PlanCode ?? t.planCode ?? '',
@@ -221,7 +203,8 @@ export class ClientsListComponent implements OnInit {
         // Actualizar valores estables solo después de cargar los datos
         this.stableActiveClients = this.activeClients;
         this.stableTrialClients = this.trialClients;
-        this.stableTotalActiveUsers = this.totalActiveUsers;
+        this.stableSuspendedClients = this.suspendedClients;
+        this.stableInactiveClients = this.inactiveClients;
         
         this.isLoading = false;
       },
@@ -421,8 +404,18 @@ export class ClientsListComponent implements OnInit {
     }).length;
   }
 
-  get totalActiveUsers(): number {
-    return this.clients.reduce((sum, c) => sum + (c.activeUsersCount || 0), 0);
+  get suspendedClients(): number {
+    return this.clients.filter(c => {
+      const status = (c.status || '').toLowerCase();
+      return status === 'suspended';
+    }).length;
+  }
+
+  get inactiveClients(): number {
+    return this.clients.filter(c => {
+      const status = (c.status || '').toLowerCase();
+      return status === 'inactive';
+    }).length;
   }
 
   /**
@@ -432,25 +425,19 @@ export class ClientsListComponent implements OnInit {
     const queryParams: any = {};
     
     // Solo agregar query params si no son los valores por defecto
-    if (this.currentPage > 1) {
-      queryParams['page'] = this.currentPage;
-    }
+    queryParams['page'] = this.currentPage > 1 ? this.currentPage : null;
     
     if (this.pageSize !== 10) {
       queryParams['pageSize'] = this.pageSize;
     }
     
-    if (this.searchTerm && this.searchTerm.trim()) {
-      queryParams['search'] = this.searchTerm.trim();
-    }
+    queryParams['search'] = this.searchTerm && this.searchTerm.trim()
+      ? this.searchTerm.trim()
+      : null;
     
-    if (this.selectedStatus) {
-      queryParams['status'] = this.selectedStatus;
-    }
+    queryParams['status'] = this.selectedStatus || null;
     
-    if (this.selectedPlanCode) {
-      queryParams['planCode'] = this.selectedPlanCode;
-    }
+    queryParams['planCode'] = this.selectedPlanCode || null;
     
     // Actualizar URL sin recargar la página
     this.router.navigate([], {

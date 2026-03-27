@@ -24,6 +24,7 @@ export interface ApiError {
 export interface Tenant {
   tenantId: number;
   name: string;
+  email?: string;
   slug: string;
   description: string;
   planCode: string;
@@ -47,6 +48,9 @@ export interface TenantsListDataRaw {
 export interface TenantRaw {
   TenantId: number;
   Name: string;
+  Email?: string | null;
+  OwnerEmail?: string | null;
+  UserEmail?: string | null;
   Slug: string;
   Description: string;
   PlanCode: string;

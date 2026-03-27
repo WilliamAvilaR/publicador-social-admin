@@ -189,13 +189,14 @@
     }
 
     // Anchos fijos por columna para evitar cambios al paginar
-    th:nth-child(1) { width: 25%; } // Cliente
-    th:nth-child(2) { width: 12%; } // Plan
-    th:nth-child(3) { width: 12%; } // Estado
-    th:nth-child(4) { width: 12%; } // Usuarios Activos
-    th:nth-child(5) { width: 15%; } // Slug
-    th:nth-child(6) { width: 14%; } // Fecha Creación
-    th:nth-child(7) { width: 10%; } // Acciones
+    th:nth-child(1) { width: 17%; } // Cliente
+    th:nth-child(2) { width: 20%; } // Correo
+    th:nth-child(3) { width: 11%; } // Plan
+    th:nth-child(4) { width: 10%; } // Estado
+    th:nth-child(5) { width: 11%; } // Usuarios Activos
+    th:nth-child(6) { width: 12%; } // Slug
+    th:nth-child(7) { width: 11%; } // Fecha Creación
+    th:nth-child(8) { width: 8%; } // Acciones
   }
 
   tbody {
@@ -221,18 +222,19 @@
           word-wrap: break-word;
         }
 
-        &:nth-child(5) {
-          // Slug - permitir wrap si es muy largo
+        &:nth-child(2),
+        &:nth-child(6) {
+          // Correo y Slug - permitir wrap si es muy largo
           white-space: normal;
           word-wrap: break-word;
         }
 
         // Otras columnas con ellipsis
-        &:nth-child(2),
         &:nth-child(3),
         &:nth-child(4),
-        &:nth-child(6),
-        &:nth-child(7) {
+        &:nth-child(5),
+        &:nth-child(7),
+        &:nth-child(8) {
           text-overflow: ellipsis;
           white-space: nowrap;
         }

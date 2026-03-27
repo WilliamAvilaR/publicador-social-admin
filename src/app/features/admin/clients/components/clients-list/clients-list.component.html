@@ -49,6 +49,7 @@
         <thead>
           <tr>
             <th>Cliente</th>
+            <th>Correo</th>
             <th>Plan</th>
             <th>Estado</th>
             <th>Usuarios Activos</th>
@@ -64,6 +65,7 @@
                 <strong>{{ client.name }}</strong>
               </div>
             </td>
+            <td>{{ client.email || '-' }}</td>
             <td>
               <span class="plan-badge" [ngClass]="getPlanClass(client.planCode)" *ngIf="client.planCode">
                 {{ getPlanText(client.planCode) }}
@@ -104,12 +106,16 @@
         <strong class="stat-value">{{ stableActiveClients }}</strong>
       </span>
       <span class="stat-item">
-        <span class="stat-label">Trial:</span>
+        <span class="stat-label">Prueba:</span>
         <strong class="stat-value">{{ stableTrialClients }}</strong>
       </span>
       <span class="stat-item">
-        <span class="stat-label">Usuarios:</span>
-        <strong class="stat-value">{{ stableTotalActiveUsers }}</strong>
+        <span class="stat-label">Suspendidos:</span>
+        <strong class="stat-value">{{ stableSuspendedClients }}</strong>
+      </span>
+      <span class="stat-item">
+        <span class="stat-label">Inactivos:</span>
+        <strong class="stat-value">{{ stableInactiveClients }}</strong>
       </span>
     </div>
 

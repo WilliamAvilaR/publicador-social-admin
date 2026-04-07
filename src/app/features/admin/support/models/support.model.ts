@@ -4,67 +4,87 @@
 
 // ============================================
 // REQUEST LOGS
+// Contrato: GET /api/admin/logs/requests — JSON camelCase (AdminRequestLogListItemDto)
 // ============================================
 
 export interface ApiRequestLog {
-  Id: number;
-  CorrelationId: string;
-  UserId?: number | null;
-  TenantId?: number | null;
-  TenantName?: string | null;
-  HttpMethod: string;
-  Path: string;
-  QueryString?: string | null;
-  StatusCode: number;
-  ElapsedMs: number;
-  UserAgent?: string | null;
-  IpAddress?: string | null;
-  IsSuccess: boolean;
-  OccurredAt: string;
-  CreatedAt: string;
+  id: number;
+  correlationId: string;
+  userId?: number | null;
+  tenantId?: number | null;
+  tenantName?: string | null;
+  httpMethod: string;
+  path: string;
+  queryString?: string | null;
+  statusCode: number;
+  elapsedMs: number;
+  userAgent?: string | null;
+  browserFamily?: string | null;
+  ipAddress?: string | null;
+  isSuccess: boolean;
+  occurredAt: string;
+  createdAt: string;
 }
 
-export interface ErrorLog {
-  Id: number;
-  ExceptionType?: string | null;
-  ExceptionMessage?: string | null;
-  Severity?: string | null;
-  IsHandled?: boolean | null;
+/** Errores anidados en el detalle de un request (camelCase) */
+export interface ApiRequestLogErrorItem {
+  id: number;
+  exceptionType?: string | null;
+  exceptionMessage?: string | null;
+  severity?: string | null;
+  isHandled?: boolean | null;
 }
 
 export interface ApiRequestLogDetail extends ApiRequestLog {
-  ErrorLogs?: ErrorLog[];
+  errorLogs?: ApiRequestLogErrorItem[];
 }
 
 export interface GetRequestsParams {
   tenantId?: number;
   userId?: number;
   method?: string;
+  methods?: string;
   path?: string;
+  exactPath?: boolean;
   statusCode?: number;
+  statusCodeFrom?: number;
+  statusCodeTo?: number;
   fromDate?: string;
   toDate?: string;
+  createdFromDate?: string;
+  createdToDate?: string;
   minElapsedMs?: number;
+  maxElapsedMs?: number;
   onlyFailed?: boolean;
+  isSuccess?: boolean;
   correlationId?: string;
+  ipAddress?: string;
+  userAgent?: string;
+  browserFamily?: string;
+  query?: string;
+  sortBy?: 'occurredAt' | 'createdAt' | 'statusCode' | 'elapsedMs' | 'id' | 'httpMethod' | 'path' | 'tenantId' | 'userId' | 'browserFamily';
+  sortDir?: 'asc' | 'desc';
   page?: number;
   pageSize?: number;
 }
 
+/** ApiResponse<object> con data = AdminRequestLogsPagedResult */
 export interface RequestsListResponse {
   data: {
-    Requests: ApiRequestLog[];
-    Total: number;
-    Page: number;
-    PageSize: number;
-    TotalPages: number;
+    requests: ApiRequestLog[];
+    total: number;
+    page: number;
+    pageSize: number;
+    totalPages: number;
   };
-  success: boolean;
+  requiresReauth: boolean;
+  meta: unknown | null;
 }
 
 export interface RequestDetailResponse {
   data: ApiRequestLogDetail;
-  success: boolean;
+  requiresReauth: boolean;
+  meta: unknown | null;
 }
 
 // ============================================

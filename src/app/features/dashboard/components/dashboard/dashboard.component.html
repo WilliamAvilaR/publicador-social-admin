@@ -35,10 +35,29 @@
           <span class="nav-icon">📦</span>
           <span class="nav-text">Gestión de Planes</span>
         </a>
-        <a routerLink="/dashboard/soporte" routerLinkActive="active">
-          <span class="nav-icon">🛠️</span>
-          <span class="nav-text">Soporte Técnico</span>
-        </a>
+        <div class="nav-accordion" [class.nav-accordion--open]="supportMenuOpen">
+          <button
+            type="button"
+            class="nav-accordion-toggle"
+            [class.active]="supportMenuOpen"
+            (click)="toggleSupportMenu()"
+          >
+            <span class="nav-icon">🛠️</span>
+            <span class="nav-text">Soporte Técnico</span>
+            <span class="nav-accordion-arrow">{{ supportMenuOpen ? '▾' : '▸' }}</span>
+          </button>
+          <div class="nav-submenu" *ngIf="supportMenuOpen">
+            <a routerLink="/dashboard/soporte" [queryParams]="{ subtab: 'requests' }" routerLinkActive="active">
+              <span class="nav-text">🌐 Requests HTTP</span>
+            </a>
+            <a routerLink="/dashboard/soporte" [queryParams]="{ subtab: 'errors' }" routerLinkActive="active">
+              <span class="nav-text">⚠️ Errores del Sistema</span>
+            </a>
+            <a routerLink="/dashboard/soporte" [queryParams]="{ subtab: 'audit' }" routerLinkActive="active">
+              <span class="nav-text">📊 Historial de Acciones (Auditoría)</span>
+            </a>
+          </div>
+        </div>
         <a routerLink="/dashboard/metricas" routerLinkActive="active">
           <span class="nav-icon">📈</span>
           <span class="nav-text">Métricas Globales</span>

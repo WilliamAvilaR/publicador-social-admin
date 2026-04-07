@@ -18,6 +18,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   isLoading = false;
   errorMessage = '';
   currentPageTitle = 'Inicio';
+  supportMenuOpen = false;
   private routerSubscription?: Subscription;
 
   // Mapeo de rutas a títulos
@@ -59,6 +60,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   updatePageTitle(): void {
     const url = this.router.url.split('?')[0]; // Remover query params
+    this.supportMenuOpen = url.startsWith('/dashboard/soporte');
     
     // Buscar coincidencia exacta primero
     if (this.routeTitleMap[url]) {
@@ -127,5 +129,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   isPlatformSupport(): boolean {
     return this.hasRole('PlatformSupport');
+  }
+
+  toggleSupportMenu(): void {
+    this.supportMenuOpen = !this.supportMenuOpen;
   }
 }

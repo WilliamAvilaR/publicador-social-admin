@@ -7,19 +7,234 @@
     <div class="alert alert-success">{{ successMessage }}</div>
   </div>
 
-  <!-- Botón de refrescar -->
-  <div class="toolbar">
-    <button class="btn-refresh" (click)="refreshAll()" [disabled]="isLoadingErrors || isLoadingRequests || isLoadingAudit">
-      🔄 Actualizar Todo
-    </button>
-  </div>
+  <div class="support-tab-panels">
+    <!-- 1. Requests HTTP -->
+    <div
+      class="section-card support-tab-panel"
+      *ngIf="activeSubTab === 'requests'"
+      role="tabpanel"
+    >
+      <!-- Filtros de requests (contrato query §3) -->
+      <div class="filters-section request-quick-search-wrap">
+        <input
+          class="filter-input filter-input-wide"
+          type="text"
+          placeholder="Buscar en ruta, querystring, IP o User-Agent"
+          [(ngModel)]="requestQuickQuery"
+          (keyup.enter)="applyRequestFilters()"
+          title="query"
+        />
+        <button type="button" class="btn-filter" (click)="applyRequestFilters()">Buscar</button>
+        <button type="button" class="btn-clear" (click)="clearRequestFilters()">Limpiar</button>
+        <button
+          type="button"
+          class="btn-advanced-toggle"
+          (click)="toggleAdvancedRequestSearch()"
+          [attr.aria-expanded]="showAdvancedRequestSearch"
+        >
+          {{ showAdvancedRequestSearch ? 'Ocultar búsqueda avanzada' : 'Búsqueda avanzada' }}
+        </button>
+      </div>
 
-  <div class="support-grid">
-    <!-- Errores del Sistema -->
-    <div class="section-card">
-      <h2>⚠️ Errores del Sistema</h2>
-      
-      <!-- Filtros de errores -->
+      <div class="filters-section request-filters-wrap" *ngIf="showAdvancedRequestSearch">
+        <input
+          class="filter-input"
+          type="number"
+          placeholder="Tenant ID"
+          [(ngModel)]="requestFilters.tenantId"
+          title="tenantId"
+        />
+        <input
+          class="filter-input"
+          type="number"
+          placeholder="User ID"
+          [(ngModel)]="requestFilters.userId"
+          title="userId"
+        />
+        <input
+          class="filter-input"
+          type="text"
+          placeholder="Método (GET, POST…)"
+          [(ngModel)]="requestFilters.method"
+          title="method — el cliente envía en mayúsculas"
+        />
+        <input
+          class="filter-input"
+          type="text"
+          placeholder="Métodos CSV (GET,POST)"
+          [(ngModel)]="requestFilters.methods"
+          title="methods"
+        />
+        <input
+          class="filter-input filter-input-wide"
+          type="text"
+          placeholder="Subcadena en path"
+          [(ngModel)]="requestFilters.path"
+          title="path — Contains en servidor"
+        />
+        <label class="filter-checkbox">
+          <input type="checkbox" [(ngModel)]="requestFilters.exactPath" />
+          Path exacto
+        </label>
+        <input
+          class="filter-input"
+          type="number"
+          placeholder="Status HTTP"
+          [(ngModel)]="requestFilters.statusCode"
+          title="statusCode"
+        />
+        <input
+          class="filter-input"
+          type="number"
+          placeholder="Status desde"
+          [(ngModel)]="requestFilters.statusCodeFrom"
+          title="statusCodeFrom"
+        />
+        <input
+          class="filter-input"
+          type="number"
+          placeholder="Status hasta"
+          [(ngModel)]="requestFilters.statusCodeTo"
+          title="statusCodeTo"
+        />
+        <input
+          class="filter-input"
+          type="datetime-local"
+          placeholder="Desde"
+          [(ngModel)]="requestDateFilters.fromDate"
+          title="fromDate (OccurredAt mínimo)"
+        />
+        <input
+          class="filter-input"
+          type="datetime-local"
+          placeholder="Hasta"
+          [(ngModel)]="requestDateFilters.toDate"
+          title="toDate (OccurredAt máximo)"
+        />
+        <input
+          class="filter-input"
+          type="datetime-local"
+          placeholder="Creado desde"
+          [(ngModel)]="requestDateFilters.createdFromDate"
+          title="createdFromDate (CreatedAt mínimo)"
+        />
+        <input
+          class="filter-input"
+          type="datetime-local"
+          placeholder="Creado hasta"
+          [(ngModel)]="requestDateFilters.createdToDate"
+          title="createdToDate (CreatedAt máximo)"
+        />
+        <input
+          class="filter-input"
+          type="number"
+          placeholder="Min. ms"
+          [(ngModel)]="requestFilters.minElapsedMs"
+          title="minElapsedMs"
+        />
+        <input
+          class="filter-input"
+          type="number"
+          placeholder="Max. ms"
+          [(ngModel)]="requestFilters.maxElapsedMs"
+          title="maxElapsedMs"
+        />
+        <input
+          class="filter-input filter-input-wide"
+          type="text"
+          placeholder="Correlation ID (GUID)"
+          [(ngModel)]="requestFilters.correlationId"
+          title="correlationId"
+        />
+        <input
+          class="filter-input"
+          type="text"
+          placeholder="IP contains"
+          [(ngModel)]="requestFilters.ipAddress"
+          title="ipAddress"
+        />
+        <input
+          class="filter-input filter-input-wide"
+          type="text"
+          placeholder="User-Agent contains"
+          [(ngModel)]="requestFilters.userAgent"
+          title="userAgent"
+        />
+        <select [(ngModel)]="requestFilters.browserFamily" class="filter-select">
+          <option [ngValue]="undefined">Navegador: Todos</option>
+          <option value="Edge">Edge</option>
+          <option value="Chrome">Chrome</option>
+          <option value="Firefox">Firefox</option>
+          <option value="Safari">Safari</option>
+          <option value="Opera">Opera</option>
+          <option value="Other">Other</option>
+        </select>
+        <label class="filter-checkbox">
+          <input type="checkbox" [(ngModel)]="requestFilters.onlyFailed" />
+          Solo fallidos
+        </label>
+        <label class="filter-checkbox">
+          IsSuccess:
+          <select [(ngModel)]="requestFilters.isSuccess" class="filter-select">
+            <option [ngValue]="undefined">Todos</option>
+            <option [ngValue]="true">Éxito</option>
+            <option [ngValue]="false">Fallo</option>
+          </select>
+        </label>
+        <button type="button" class="btn-filter" (click)="applyRequestFilters()">Aplicar avanzada</button>
+        <button type="button" class="btn-clear" (click)="clearRequestFilters()">Limpiar todo</button>
+      </div>
+
+      <ng-container *ngIf="!isLoadingRequests">
+        <div class="requests-grid-container" *ngIf="requests.length > 0">
+          <ag-grid-angular
+            class="ag-theme-quartz requests-grid"
+            [rowData]="requests"
+            [columnDefs]="requestGridColumnDefs"
+            [defaultColDef]="requestGridDefaultColDef"
+            [animateRows]="true"
+            [pagination]="false"
+            [suppressMultiSort]="true"
+            [tooltipShowDelay]="200"
+            [domLayout]="'normal'"
+            (rowClicked)="onRequestGridRowClicked($event)"
+            (sortChanged)="onRequestGridSortChanged($event)"
+          />
+        </div>
+        <div class="empty-state requests-log-empty" *ngIf="requests.length === 0">
+          <p>No hay requests registrados</p>
+        </div>
+      </ng-container>
+      <div class="loading-state" *ngIf="isLoadingRequests">
+        <p>Cargando requests...</p>
+      </div>
+
+      <!-- Paginación de requests (server-side) -->
+      <div class="pagination requests-pagination" *ngIf="requestsTotal > 0">
+        <div class="requests-pagination__page-size">
+          <label for="requestsPageSize">Filas:</label>
+          <select
+            id="requestsPageSize"
+            [ngModel]="requestsPageSize"
+            (ngModelChange)="onRequestsPageSizeChange($event)"
+          >
+            <option *ngFor="let size of requestPageSizeOptions" [ngValue]="size">{{ size }}</option>
+          </select>
+        </div>
+        <button type="button" (click)="goToFirstRequestsPage()" [disabled]="requestsPage === 1">« Primera</button>
+        <button type="button" (click)="goToRequestsPage(requestsPage - 1)" [disabled]="requestsPage === 1">‹ Anterior</button>
+        <span>Página {{ requestsPage }} de {{ requestsTotalPages }} ({{ requestsTotal }} total)</span>
+        <button type="button" (click)="goToRequestsPage(requestsPage + 1)" [disabled]="requestsPage === requestsTotalPages">Siguiente ›</button>
+        <button type="button" (click)="goToLastRequestsPage()" [disabled]="requestsPage === requestsTotalPages">Última »</button>
+      </div>
+    </div>
+
+    <!-- 2. Errores del Sistema -->
+    <div
+      class="section-card support-tab-panel"
+      *ngIf="activeSubTab === 'errors'"
+      role="tabpanel"
+    >
       <div class="filters-section">
         <select [(ngModel)]="errorFilters.severity" class="filter-select">
           <option value="">Todas las severidades</option>
@@ -31,8 +246,8 @@
           <input type="checkbox" [(ngModel)]="errorFilters.isHandled" />
           Solo no manejados
         </label>
-        <button class="btn-filter" (click)="applyErrorFilters()">Filtrar</button>
-        <button class="btn-clear" (click)="clearErrorFilters()">Limpiar</button>
+        <button type="button" class="btn-filter" (click)="applyErrorFilters()">Filtrar</button>
+        <button type="button" class="btn-clear" (click)="clearErrorFilters()">Limpiar</button>
       </div>
 
       <div class="errors-list" *ngIf="!isLoadingErrors">
@@ -60,73 +275,25 @@
         <p>Cargando errores...</p>
       </div>
 
-      <!-- Paginación de errores -->
       <div class="pagination" *ngIf="errorsTotalPages > 1">
-        <button (click)="goToErrorsPage(errorsPage - 1)" [disabled]="errorsPage === 1">« Anterior</button>
+        <button type="button" (click)="goToErrorsPage(errorsPage - 1)" [disabled]="errorsPage === 1">« Anterior</button>
         <span>Página {{ errorsPage }} de {{ errorsTotalPages }} ({{ errorsTotal }} total)</span>
-        <button (click)="goToErrorsPage(errorsPage + 1)" [disabled]="errorsPage === errorsTotalPages">Siguiente »</button>
+        <button type="button" (click)="goToErrorsPage(errorsPage + 1)" [disabled]="errorsPage === errorsTotalPages">Siguiente »</button>
       </div>
     </div>
 
-    <!-- Requests HTTP -->
-    <div class="section-card">
-      <h2>🌐 Requests HTTP</h2>
-      
-      <!-- Filtros de requests -->
-      <div class="filters-section">
-        <label class="filter-checkbox">
-          <input type="checkbox" [(ngModel)]="requestFilters.onlyFailed" />
-          Solo fallidos
-        </label>
-        <button class="btn-filter" (click)="applyRequestFilters()">Filtrar</button>
-        <button class="btn-clear" (click)="clearRequestFilters()">Limpiar</button>
-      </div>
-
-      <div class="requests-list" *ngIf="!isLoadingRequests">
-        <div class="request-item" *ngFor="let request of requests" (click)="viewRequestDetail(request)">
-          <div class="request-header">
-            <span class="method-badge" [ngClass]="'method-' + request.HttpMethod.toLowerCase()">
-              {{ request.HttpMethod }}
-            </span>
-            <span class="status-badge" [ngClass]="getStatusClass(request.StatusCode)">
-              {{ request.StatusCode }}
-            </span>
-          </div>
-          <div class="request-content">
-            <strong class="path">{{ request.Path }}</strong>
-            <div class="request-meta">
-              <span>{{ request.TenantName || 'Sistema' }}</span>
-              <span>{{ request.ElapsedMs }}ms</span>
-              <span class="timestamp">{{ formatDate(request.OccurredAt) }}</span>
-            </div>
-          </div>
-        </div>
-        <div class="empty-state" *ngIf="requests.length === 0">
-          <p>No hay requests registrados</p>
-        </div>
-      </div>
-      <div class="loading-state" *ngIf="isLoadingRequests">
-        <p>Cargando requests...</p>
-      </div>
-
-      <!-- Paginación de requests -->
-      <div class="pagination" *ngIf="requestsTotalPages > 1">
-        <button (click)="goToRequestsPage(requestsPage - 1)" [disabled]="requestsPage === 1">« Anterior</button>
-        <span>Página {{ requestsPage }} de {{ requestsTotalPages }} ({{ requestsTotal }} total)</span>
-        <button (click)="goToRequestsPage(requestsPage + 1)" [disabled]="requestsPage === requestsTotalPages">Siguiente »</button>
-      </div>
-    </div>
-
-    <!-- Auditoría -->
-    <div class="section-card full-width">
-      <h2>📊 Historial de Acciones (Auditoría)</h2>
-      
+    <!-- 3. Auditoría -->
+    <div
+      class="section-card support-tab-panel support-tab-panel--wide"
+      *ngIf="activeSubTab === 'audit'"
+      role="tabpanel"
+    >
       <!-- Filtros de auditoría -->
       <div class="filters-section">
         <input type="text" [(ngModel)]="auditFilters.actionType" placeholder="Tipo de acción" class="filter-input" />
         <input type="text" [(ngModel)]="auditFilters.entityType" placeholder="Tipo de entidad" class="filter-input" />
-        <button class="btn-filter" (click)="applyAuditFilters()">Filtrar</button>
-        <button class="btn-clear" (click)="clearAuditFilters()">Limpiar</button>
+        <button type="button" class="btn-filter" (click)="applyAuditFilters()">Filtrar</button>
+        <button type="button" class="btn-clear" (click)="clearAuditFilters()">Limpiar</button>
       </div>
 
       <div class="audit-table-container" *ngIf="!isLoadingAudit">
@@ -166,9 +333,9 @@
 
       <!-- Paginación de auditoría -->
       <div class="pagination" *ngIf="auditTotalPages > 1">
-        <button (click)="goToAuditPage(auditPage - 1)" [disabled]="auditPage === 1">« Anterior</button>
+        <button type="button" (click)="goToAuditPage(auditPage - 1)" [disabled]="auditPage === 1">« Anterior</button>
         <span>Página {{ auditPage }} de {{ auditTotalPages }} ({{ auditTotal }} total)</span>
-        <button (click)="goToAuditPage(auditPage + 1)" [disabled]="auditPage === auditTotalPages">Siguiente »</button>
+        <button type="button" (click)="goToAuditPage(auditPage + 1)" [disabled]="auditPage === auditTotalPages">Siguiente »</button>
       </div>
     </div>
   </div>
@@ -218,33 +385,33 @@
       <div class="modal-body" *ngIf="selectedRequest">
         <div class="detail-section">
           <h4>Información General</h4>
-          <p><strong>ID:</strong> {{ selectedRequest.Id }}</p>
-          <p><strong>Correlation ID:</strong> {{ selectedRequest.CorrelationId }}</p>
-          <p><strong>Método:</strong> {{ selectedRequest.HttpMethod }}</p>
-          <p><strong>Ruta:</strong> {{ selectedRequest.Path }}</p>
-          <p><strong>Query String:</strong> {{ selectedRequest.QueryString || 'N/A' }}</p>
-          <p><strong>Status:</strong> <span [ngClass]="getStatusClass(selectedRequest.StatusCode)">{{ selectedRequest.StatusCode }}</span></p>
-          <p><strong>Duración:</strong> {{ selectedRequest.ElapsedMs }}ms</p>
-          <p><strong>Éxito:</strong> {{ selectedRequest.IsSuccess ? 'Sí' : 'No' }}</p>
+          <p><strong>ID:</strong> {{ selectedRequest.id }}</p>
+          <p><strong>Correlation ID:</strong> {{ selectedRequest.correlationId }}</p>
+          <p><strong>Método:</strong> {{ selectedRequest.httpMethod }}</p>
+          <p><strong>Ruta:</strong> {{ selectedRequest.path }}</p>
+          <p><strong>Query String:</strong> {{ selectedRequest.queryString || 'N/A' }}</p>
+          <p><strong>Status:</strong> <span [ngClass]="getStatusClass(selectedRequest.statusCode)">{{ selectedRequest.statusCode }}</span></p>
+          <p><strong>Duración:</strong> {{ selectedRequest.elapsedMs }}ms</p>
+          <p><strong>Éxito:</strong> {{ selectedRequest.isSuccess ? 'Sí' : 'No' }}</p>
         </div>
-        <div class="detail-section" *ngIf="selectedRequest.TenantName">
+        <div class="detail-section" *ngIf="selectedRequest.tenantName">
           <h4>Contexto</h4>
-          <p><strong>Cliente:</strong> {{ selectedRequest.TenantName }}</p>
-          <p><strong>Usuario:</strong> {{ selectedRequest.UserId || 'N/A' }}</p>
-          <p><strong>IP:</strong> {{ selectedRequest.IpAddress || 'N/A' }}</p>
-          <p><strong>User Agent:</strong> {{ selectedRequest.UserAgent || 'N/A' }}</p>
+          <p><strong>Cliente:</strong> {{ selectedRequest.tenantName }}</p>
+          <p><strong>Usuario:</strong> {{ selectedRequest.userId ?? 'N/A' }}</p>
+          <p><strong>IP:</strong> {{ selectedRequest.ipAddress || 'N/A' }}</p>
+          <p><strong>User Agent:</strong> {{ selectedRequest.userAgent || 'N/A' }}</p>
         </div>
-        <div class="detail-section" *ngIf="selectedRequest.ErrorLogs && selectedRequest.ErrorLogs.length > 0">
+        <div class="detail-section" *ngIf="selectedRequest.errorLogs?.length">
           <h4>Errores Relacionados</h4>
-          <div *ngFor="let error of selectedRequest.ErrorLogs" class="error-summary">
-            <p><strong>{{ error.ExceptionType }}:</strong> {{ error.ExceptionMessage }}</p>
-            <p><small>Severidad: {{ error.Severity }} | Manejado: {{ error.IsHandled ? 'Sí' : 'No' }}</small></p>
+          <div *ngFor="let error of selectedRequest.errorLogs" class="error-summary">
+            <p><strong>{{ error.exceptionType }}:</strong> {{ error.exceptionMessage }}</p>
+            <p><small>Severidad: {{ error.severity }} | Manejado: {{ error.isHandled ? 'Sí' : 'No' }}</small></p>
           </div>
         </div>
         <div class="detail-section">
           <h4>Fechas</h4>
-          <p><strong>Ocurrido:</strong> {{ formatDate(selectedRequest.OccurredAt) }}</p>
-          <p><strong>Creado:</strong> {{ formatDate(selectedRequest.CreatedAt) }}</p>
+          <p><strong>Ocurrido:</strong> {{ formatDate(selectedRequest.occurredAt) }}</p>
+          <p><strong>Creado:</strong> {{ formatDate(selectedRequest.createdAt) }}</p>
         </div>
       </div>
     </div>

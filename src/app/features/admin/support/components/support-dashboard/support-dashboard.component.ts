@@ -1,6 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
+import { AgGridAngular } from 'ag-grid-angular';
+import { AllCommunityModule, ColDef, ModuleRegistry, RowClickedEvent, SortChangedEvent } from 'ag-grid-community';
 import { SupportService } from '../../services/support.service';
 import {
   ApiErrorLog,
@@ -12,10 +15,17 @@ import {
   GetAuditParams
 } from '../../models/support.model';
 
+type SupportSubTab = 'requests' | 'errors' | 'audit';
+type RequestSortBy = NonNullable<GetRequestsParams['sortBy']>;
+type RequestSortDir = NonNullable<GetRequestsParams['sortDir']>;
+
+// AG Grid v35 requiere registro explícito de módulos.
+ModuleRegistry.registerModules([AllCommunityModule]);
+
 @Component({
   selector: 'app-support-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AgGridAngular],
   templateUrl: './support-dashboard.component.html',
   styleUrl: './support-dashboard.component.scss'
 })
@@ -31,6 +41,81 @@ export class SupportDashboardComponent implements OnInit {
   errors: ApiErrorLog[] = [];
   requests: ApiRequestLog[] = [];
   auditLogs: AuditLog[] = [];
+  requestGridColumnDefs: ColDef<ApiRequestLog>[] = [
+    {
+      field: 'occurredAt',
+      headerName: 'Hora',
+      minWidth: 170,
+      sort: 'desc',
+      valueFormatter: (p) => this.formatDateTimeCompact(String(p.value ?? ''))
+    },
+    {
+      field: 'httpMethod',
+      headerName: 'Método',
+      width: 110
+    },
+    {
+      field: 'statusCode',
+      headerName: 'Status',
+      width: 105,
+      cellClass: (p) => `request-status-cell ${this.getStatusClass(Number(p.value ?? 0))}`
+    },
+    {
+      field: 'elapsedMs',
+      headerName: 'ms',
+      width: 90
+    },
+    {
+      field: 'path',
+      headerName: 'Ruta',
+      minWidth: 300,
+      flex: 1,
+      tooltipField: 'path'
+    },
+    {
+      field: 'tenantName',
+      headerName: 'Cliente',
+      minWidth: 160,
+      valueGetter: (p) => p.data?.tenantName || 'Sistema'
+    },
+    {
+      field: 'userId',
+      headerName: 'Usuario',
+      width: 100,
+      valueGetter: (p) => p.data?.userId ?? '—'
+    },
+    {
+      field: 'browserFamily',
+      headerName: 'Navegador',
+      minWidth: 130,
+      valueGetter: (p) => p.data?.browserFamily || '—'
+    },
+    {
+      field: 'isSuccess',
+      headerName: 'Resultado',
+      width: 120,
+      valueFormatter: (p) => (p.value ? 'OK' : 'Fallo')
+    }
+  ];
+  requestGridDefaultColDef: ColDef<ApiRequestLog> = {
+    sortable: true,
+    // Importante: filtros en esta vista son 100% server-side.
+    // Desactivamos filtro cliente de AG Grid para evitar inconsistencias por página.
+    filter: false,
+    resizable: true
+  };
+  private readonly requestSortByMap: Record<string, RequestSortBy> = {
+    occurredAt: 'occurredAt',
+    createdAt: 'createdAt',
+    statusCode: 'statusCode',
+    elapsedMs: 'elapsedMs',
+    id: 'id',
+    httpMethod: 'httpMethod',
+    path: 'path',
+    tenantId: 'tenantId',
+    userId: 'userId',
+    browserFamily: 'browserFamily'
+  };
 
   // Paginación
   errorsPage = 1;
@@ -42,6 +127,7 @@ export class SupportDashboardComponent implements OnInit {
   requestsPageSize = 20;
   requestsTotal = 0;
   requestsTotalPages = 0;
+  readonly requestPageSizeOptions = [10, 20, 50, 100];
 
   auditPage = 1;
   auditPageSize = 20;
@@ -55,11 +141,21 @@ export class SupportDashboardComponent implements OnInit {
     pageSize: 20
   };
 
-  // Filtros de requests
+  // Filtros de requests (GET /api/admin/logs/requests — query §3)
   requestFilters: GetRequestsParams = {
-    onlyFailed: undefined,
-    page: 1,
-    pageSize: 20
+    sortBy: 'occurredAt',
+    sortDir: 'desc'
+  };
+  requestQuickQuery = '';
+  showAdvancedRequestSearch = false;
+  requestSortBy: RequestSortBy = 'occurredAt';
+  requestSortDir: RequestSortDir = 'desc';
+  // Inputs datetime-local (hora local) para UX; se convierten a ISO al enviar.
+  requestDateFilters = {
+    fromDate: '',
+    toDate: '',
+    createdFromDate: '',
+    createdToDate: ''
   };
 
   // Filtros de auditoría
@@ -76,12 +172,58 @@ export class SupportDashboardComponent implements OnInit {
   showRequestDetail = false;
   showAuditDetail = false;
 
-  constructor(private supportService: SupportService) {}
+  /** Subpestañas dentro de Soporte técnico */
+  activeSubTab: SupportSubTab = 'requests';
+
+  constructor(
+    private supportService: SupportService,
+    private route: ActivatedRoute,
+    private router: Router
+  ) {}
 
   ngOnInit(): void {
-    this.loadErrors();
-    this.loadRequests();
-    this.loadAuditLogs();
+    const initialTab = this.route.snapshot.queryParamMap.get('subtab');
+    this.activeSubTab =
+      initialTab === 'errors' ? 'errors' : initialTab === 'audit' ? 'audit' : 'requests';
+
+    this.route.queryParamMap.subscribe((queryParams) => {
+      const tab = queryParams.get('subtab');
+      const nextTab: SupportSubTab =
+        tab === 'errors' ? 'errors' : tab === 'audit' ? 'audit' : 'requests';
+
+      if (nextTab === this.activeSubTab) return;
+      this.activeSubTab = nextTab;
+      if (nextTab === 'requests') this.loadRequests();
+      else if (nextTab === 'errors') this.loadErrors();
+      else this.loadAuditLogs();
+    });
+    if (this.activeSubTab === 'requests') this.loadRequests();
+    else if (this.activeSubTab === 'errors') this.loadErrors();
+    else this.loadAuditLogs();
+  }
+
+  setSupportSubTab(tab: SupportSubTab): void {
+    if (this.activeSubTab === tab) return;
+    this.activeSubTab = tab;
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { subtab: tab },
+      queryParamsHandling: 'merge'
+    });
+    if (tab === 'requests') this.loadRequests();
+    else if (tab === 'errors') this.loadErrors();
+    else this.loadAuditLogs();
+  }
+
+  get isLoadingActiveSubTab(): boolean {
+    switch (this.activeSubTab) {
+      case 'requests':
+        return this.isLoadingRequests;
+      case 'errors':
+        return this.isLoadingErrors;
+      default:
+        return this.isLoadingAudit;
+    }
   }
 
   // ============================================
@@ -116,17 +258,16 @@ export class SupportDashboardComponent implements OnInit {
     this.isLoadingRequests = true;
     this.errorMessage = '';
 
-    const params: GetRequestsParams = {
-      ...this.requestFilters,
-      page: this.requestsPage,
-      pageSize: this.requestsPageSize
-    };
+    const params = this.buildRequestsListParams();
 
     this.supportService.getRequests(params).subscribe({
       next: (response) => {
-        this.requests = response.data.Requests || [];
-        this.requestsTotal = response.data.Total || 0;
-        this.requestsTotalPages = response.data.TotalPages || 0;
+        const d = response.data;
+        this.requests = d.requests ?? [];
+        this.requestsTotal = d.total ?? 0;
+        this.requestsTotalPages = d.totalPages ?? 0;
+        if (d.page != null) this.requestsPage = d.page;
+        if (d.pageSize != null) this.requestsPageSize = d.pageSize;
         this.isLoadingRequests = false;
       },
       error: (error) => {
@@ -179,17 +320,82 @@ export class SupportDashboardComponent implements OnInit {
   }
 
   applyRequestFilters(): void {
+    this.requestFilters.query = this.requestQuickQuery.trim() || undefined;
     this.requestsPage = 1;
     this.loadRequests();
   }
 
   clearRequestFilters(): void {
+    this.requestQuickQuery = '';
+    this.requestDateFilters = {
+      fromDate: '',
+      toDate: '',
+      createdFromDate: '',
+      createdToDate: ''
+    };
     this.requestFilters = {
-      page: 1,
-      pageSize: 20
+      sortBy: this.requestSortBy,
+      sortDir: this.requestSortDir
     };
     this.requestsPage = 1;
     this.loadRequests();
+  }
+
+  toggleAdvancedRequestSearch(): void {
+    this.showAdvancedRequestSearch = !this.showAdvancedRequestSearch;
+  }
+
+  /** Arma query según contrato: enteros válidos, strings recortados, page 1–∞, pageSize 1–100 */
+  private buildRequestsListParams(): GetRequestsParams {
+    const f = this.requestFilters;
+    const params: GetRequestsParams = {
+      page: this.requestsPage,
+      pageSize: Math.min(100, Math.max(1, this.requestsPageSize)),
+      sortBy: this.requestSortBy,
+      sortDir: this.requestSortDir
+    };
+
+    const optInt = (v: unknown): number | undefined => {
+      if (v === null || v === undefined || v === '') return undefined;
+      const x = Number(v);
+      return Number.isFinite(x) ? Math.trunc(x) : undefined;
+    };
+
+    const tid = optInt(f.tenantId);
+    if (tid !== undefined) params.tenantId = tid;
+    const uid = optInt(f.userId);
+    if (uid !== undefined) params.userId = uid;
+    if (f.method?.trim()) params.method = f.method.trim();
+    if (f.methods?.trim()) params.methods = f.methods.trim();
+    if (f.path?.trim()) params.path = f.path.trim();
+    if (f.exactPath === true) params.exactPath = true;
+    const sc = optInt(f.statusCode);
+    if (sc !== undefined) params.statusCode = sc;
+    const scFrom = optInt(f.statusCodeFrom);
+    if (scFrom !== undefined) params.statusCodeFrom = scFrom;
+    const scTo = optInt(f.statusCodeTo);
+    if (scTo !== undefined) params.statusCodeTo = scTo;
+    const fromDateIso = this.toIsoFromLocalDateTime(this.requestDateFilters.fromDate);
+    if (fromDateIso) params.fromDate = fromDateIso;
+    const toDateIso = this.toIsoFromLocalDateTime(this.requestDateFilters.toDate);
+    if (toDateIso) params.toDate = toDateIso;
+    const createdFromIso = this.toIsoFromLocalDateTime(this.requestDateFilters.createdFromDate);
+    if (createdFromIso) params.createdFromDate = createdFromIso;
+    const createdToIso = this.toIsoFromLocalDateTime(this.requestDateFilters.createdToDate);
+    if (createdToIso) params.createdToDate = createdToIso;
+    const minMs = optInt(f.minElapsedMs);
+    if (minMs !== undefined) params.minElapsedMs = minMs;
+    const maxMs = optInt(f.maxElapsedMs);
+    if (maxMs !== undefined) params.maxElapsedMs = maxMs;
+    if (f.onlyFailed === true) params.onlyFailed = true;
+    if (f.isSuccess !== undefined) params.isSuccess = f.isSuccess;
+    if (f.correlationId?.trim()) params.correlationId = f.correlationId.trim();
+    if (f.ipAddress?.trim()) params.ipAddress = f.ipAddress.trim();
+    if (f.userAgent?.trim()) params.userAgent = f.userAgent.trim();
+    if (f.browserFamily?.trim()) params.browserFamily = f.browserFamily.trim();
+    if (f.query?.trim()) params.query = f.query.trim();
+
+    return params;
   }
 
   applyAuditFilters(): void {
@@ -224,6 +430,24 @@ export class SupportDashboardComponent implements OnInit {
     }
   }
 
+  goToFirstRequestsPage(): void {
+    if (this.requestsPage > 1) this.goToRequestsPage(1);
+  }
+
+  goToLastRequestsPage(): void {
+    if (this.requestsTotalPages > 0 && this.requestsPage < this.requestsTotalPages) {
+      this.goToRequestsPage(this.requestsTotalPages);
+    }
+  }
+
+  onRequestsPageSizeChange(value: string | number): void {
+    const parsed = typeof value === 'string' ? Number(value) : value;
+    if (!Number.isFinite(parsed)) return;
+    this.requestsPageSize = Math.min(100, Math.max(1, Math.trunc(parsed)));
+    this.requestsPage = 1;
+    this.loadRequests();
+  }
+
   goToAuditPage(page: number): void {
     if (page >= 1 && page <= this.auditTotalPages) {
       this.auditPage = page;
@@ -248,7 +472,7 @@ export class SupportDashboardComponent implements OnInit {
   }
 
   viewRequestDetail(request: ApiRequestLog): void {
-    this.supportService.getRequestById(request.Id).subscribe({
+    this.supportService.getRequestById(request.id).subscribe({
       next: (response) => {
         this.selectedRequest = response.data;
         this.showRequestDetail = true;
@@ -257,6 +481,25 @@ export class SupportDashboardComponent implements OnInit {
         this.errorMessage = error.message || 'Error al cargar el detalle del request';
       }
     });
+  }
+
+  onRequestGridRowClicked(event: RowClickedEvent<ApiRequestLog>): void {
+    if (event.data) this.viewRequestDetail(event.data);
+  }
+
+  onRequestGridSortChanged(event: SortChangedEvent<ApiRequestLog>): void {
+    const sorted = event.api.getColumnState().find((c) => c.sort != null);
+    const nextBy = sorted?.colId ? this.requestSortByMap[sorted.colId] : undefined;
+    const nextDir = (sorted?.sort as RequestSortDir | undefined) ?? 'desc';
+    const normalizedBy = nextBy ?? 'occurredAt';
+    if (normalizedBy === this.requestSortBy && nextDir === this.requestSortDir) return;
+
+    this.requestSortBy = normalizedBy;
+    this.requestSortDir = nextDir;
+    this.requestFilters.sortBy = this.requestSortBy;
+    this.requestFilters.sortDir = this.requestSortDir;
+    this.requestsPage = 1;
+    this.loadRequests();
   }
 
   viewAuditDetail(audit: AuditLog): void {
@@ -316,16 +559,57 @@ export class SupportDashboardComponent implements OnInit {
     return 'status-info';
   }
 
+  /** Clase CSS para método HTTP en tabla de requests */
+  requestHttpMethodClass(method: string | undefined): string {
+    const m = (method ?? '').toLowerCase();
+    if (['get', 'post', 'put', 'patch', 'delete'].includes(m)) return `method-${m}`;
+    return 'method-unknown';
+  }
+
   formatDate(dateString: string): string {
     if (!dateString) return '';
     const date = new Date(dateString);
     return date.toLocaleString('es-ES');
   }
 
-  refreshAll(): void {
-    this.loadErrors();
-    this.loadRequests();
-    this.loadAuditLogs();
+  /** Fecha/hora compacta para tablas de logs */
+  formatDateTimeCompact(dateString: string): string {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleString('es-ES', {
+      day: '2-digit',
+      month: '2-digit',
+      year: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
+  }
+
+  private toIsoFromLocalDateTime(value: string | undefined): string | undefined {
+    if (!value?.trim()) return undefined;
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return undefined;
+    return d.toISOString();
+  }
+
+  truncateText(value: string | null | undefined, maxLen: number): string {
+    if (value == null || value === '') return '—';
+    if (value.length <= maxLen) return value;
+    return `${value.slice(0, Math.max(0, maxLen - 1))}…`;
+  }
+
+  shortCorrelationId(id: string | null | undefined): string {
+    if (id == null || id === '') return '—';
+    if (id.length <= 14) return id;
+    return `${id.slice(0, 8)}…${id.slice(-4)}`;
+  }
+
+  /** Recarga los datos de la subpestaña visible */
+  reloadActiveSubTab(): void {
+    if (this.activeSubTab === 'requests') this.loadRequests();
+    else if (this.activeSubTab === 'errors') this.loadErrors();
+    else this.loadAuditLogs();
   }
 
   // ============================================
@@ -339,14 +623,15 @@ export class SupportDashboardComponent implements OnInit {
       this.successMessage = 'Sincronización iniciada';
       setTimeout(() => {
         this.successMessage = '';
-        this.refreshAll();
+        this.reloadActiveSubTab();
       }, 2000);
     }
   }
 
   viewLogs(userId: number): void {
-    // Filtrar requests por usuario
+    this.activeSubTab = 'requests';
     this.requestFilters.userId = userId;
-    this.applyRequestFilters();
+    this.requestsPage = 1;
+    this.loadRequests();
   }
 }

@@ -172,9 +172,30 @@ export class ClientDetailComponent implements OnInit {
     const externalKey = raw.ExternalKey ?? raw.externalKey ?? null;
     const createdAt = raw.CreatedAt ?? raw.createdAt ?? '';
     const updatedAt = raw.UpdatedAt ?? raw.updatedAt ?? '';
-    const users = raw.Users ?? raw.users ?? [];
+    const usersRaw = raw.Users ?? raw.users ?? [];
+    const users = Array.isArray(usersRaw)
+      ? usersRaw.map((u: any) => ({
+          UserId: u.UserId ?? u.userId ?? 0,
+          UserEmail: u.UserEmail ?? u.userEmail ?? '',
+          UserName: u.UserName ?? u.userName ?? '',
+          RoleInTenant: u.RoleInTenant ?? u.roleInTenant ?? '',
+          JoinedAt: u.JoinedAt ?? u.joinedAt ?? ''
+        }))
+      : [];
     const activeUsersCount = raw.ActiveUsersCount ?? raw.activeUsersCount ?? 0;
-    const activeSubscription = raw.ActiveSubscription ?? raw.activeSubscription ?? null;
+    const rawActiveSubscription = raw.ActiveSubscription ?? raw.activeSubscription ?? null;
+    const activeSubscription = rawActiveSubscription
+      ? {
+          SubscriptionId: rawActiveSubscription.SubscriptionId ?? rawActiveSubscription.subscriptionId ?? 0,
+          PlanCode: rawActiveSubscription.PlanCode ?? rawActiveSubscription.planCode ?? '',
+          Status: rawActiveSubscription.Status ?? rawActiveSubscription.status ?? '',
+          StartDate: rawActiveSubscription.StartDate ?? rawActiveSubscription.startDate ?? '',
+          EndDate: rawActiveSubscription.EndDate ?? rawActiveSubscription.endDate ?? null,
+          ExternalSubscriptionId:
+            rawActiveSubscription.ExternalSubscriptionId ?? rawActiveSubscription.externalSubscriptionId ?? null,
+          CreatedAt: rawActiveSubscription.CreatedAt ?? rawActiveSubscription.createdAt ?? ''
+        }
+      : null;
     
     // Calcular el estado desde IsActive y SuspendedAt
     // Según la documentación de estados permitidos:
@@ -206,7 +227,7 @@ export class ClientDetailComponent implements OnInit {
     }
 
     // Obtener email del primer usuario si existe
-    const email = users && users.length > 0 ? (users[0].UserEmail ?? users[0].userEmail ?? '') : '';
+    const email = users && users.length > 0 ? users[0].UserEmail ?? '' : '';
 
     // Obtener nombre del usuario Owner o el primer usuario disponible
     let userName = '';
@@ -218,10 +239,10 @@ export class ClientDetailComponent implements OnInit {
       });
       
       if (ownerUser) {
-        userName = ownerUser.UserName ?? ownerUser.userName ?? '';
+        userName = ownerUser.UserName ?? '';
       } else if (users[0]) {
         // Si no hay Owner, usar el primer usuario
-        userName = users[0].UserName ?? users[0].userName ?? '';
+        userName = users[0].UserName ?? '';
       }
     }
     

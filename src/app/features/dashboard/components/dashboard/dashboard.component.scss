@@ -149,6 +149,61 @@
       font-weight: 600;
     }
   }
+
+  .nav-accordion {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .nav-accordion-toggle {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 14px 24px;
+    border: 0;
+    border-left: 3px solid transparent;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.3s;
+
+    .nav-icon {
+      font-size: 20px;
+      width: 24px;
+      text-align: center;
+    }
+
+    .nav-text {
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .nav-accordion-arrow {
+      margin-left: auto;
+      font-size: 12px;
+      color: var(--text-tertiary);
+    }
+
+    &:hover,
+    &.active {
+      color: var(--accent-primary);
+      background-color: var(--bg-hover);
+      border-left-color: var(--accent-primary);
+    }
+  }
+
+  .nav-submenu {
+    display: flex;
+    flex-direction: column;
+
+    a {
+      padding: 10px 24px 10px 60px;
+      font-size: 13px;
+      border-left: 3px solid transparent;
+    }
+  }
 }
 
 .dashboard-content {

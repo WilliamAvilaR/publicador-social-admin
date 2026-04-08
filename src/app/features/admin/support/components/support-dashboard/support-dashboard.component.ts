@@ -3,7 +3,14 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AgGridAngular } from 'ag-grid-angular';
-import { AllCommunityModule, ColDef, ModuleRegistry, RowClickedEvent, SortChangedEvent } from 'ag-grid-community';
+import {
+  AllCommunityModule,
+  ColDef,
+  ICellRendererParams,
+  ModuleRegistry,
+  RowClickedEvent,
+  SortChangedEvent
+} from 'ag-grid-community';
 import { SupportService } from '../../services/support.service';
 import {
   ApiErrorLog,
@@ -15,7 +22,7 @@ import {
   GetAuditParams
 } from '../../models/support.model';
 
-type SupportSubTab = 'requests' | 'errors' | 'audit';
+type SupportSubTab = 'requests' | 'errors';
 type RequestSortBy = NonNullable<GetRequestsParams['sortBy']>;
 type RequestSortDir = NonNullable<GetRequestsParams['sortDir']>;
 
@@ -39,6 +46,73 @@ export class SupportDashboardComponent implements OnInit {
 
   // Datos
   errors: ApiErrorLog[] = [];
+  errorGridColumnDefs: ColDef<ApiErrorLog>[] = [
+    {
+      field: 'occurredAt',
+      headerName: 'Hora',
+      minWidth: 170,
+      sort: 'desc',
+      valueFormatter: (p) => this.formatDateTimeCompact(String(p.value ?? ''))
+    },
+    {
+      field: 'severity',
+      headerName: 'Severidad',
+      width: 130,
+      cellClass: (p) => `error-severity-cell ${this.getSeverityClass(String(p.value ?? ''))}`,
+      valueFormatter: (p) => this.getSeverityLabel(String(p.value ?? ''))
+    },
+    {
+      field: 'statusCode',
+      headerName: 'Status',
+      width: 105,
+      cellClass: (p) => `request-status-cell ${this.getStatusClass(Number(p.value ?? 0))}`
+    },
+    {
+      field: 'httpMethod',
+      headerName: 'Método',
+      width: 110,
+      valueGetter: (p) => p.data?.httpMethod || '—'
+    },
+    {
+      field: 'path',
+      headerName: 'Ruta',
+      minWidth: 300,
+      flex: 1,
+      tooltipField: 'path',
+      valueGetter: (p) => p.data?.path || '—'
+    },
+    {
+      field: 'exceptionType',
+      headerName: 'Excepción',
+      minWidth: 170,
+      valueGetter: (p) => p.data?.exceptionType || '—'
+    },
+    {
+      field: 'exceptionMessage',
+      headerName: 'Mensaje',
+      minWidth: 280,
+      flex: 1,
+      tooltipField: 'exceptionMessage',
+      valueGetter: (p) => p.data?.exceptionMessage || '—'
+    },
+    {
+      field: 'tenantName',
+      headerName: 'Cliente',
+      minWidth: 160,
+      valueGetter: (p) => p.data?.tenantName || 'Sistema'
+    },
+    {
+      field: 'isHandled',
+      headerName: 'Manejado',
+      width: 120,
+      cellRenderer: (p: ICellRendererParams<ApiErrorLog>) => (p.value === true ? 'Sí' : 'No')
+    }
+  ];
+  errorGridDefaultColDef: ColDef<ApiErrorLog> = {
+    sortable: false,
+    filter: false,
+    resizable: true
+  };
   requests: ApiRequestLog[] = [];
   auditLogs: AuditLog[] = [];
   requestGridColumnDefs: ColDef<ApiRequestLog>[] = [
@@ -94,7 +168,17 @@ export class SupportDashboardComponent implements OnInit {
       field: 'isSuccess',
       headerName: 'Resultado',
       width: 120,
-      valueFormatter: (p) => (p.value ? 'OK' : 'Fallo')
+      // AG Grid v35 usa checkbox automático en booleanos; forzamos texto legible para soporte.
+      cellRenderer: (p: ICellRendererParams<ApiRequestLog>) =>
+        p.value === true ? 'Éxito' : 'Fallo',
+      cellClass: (p) =>
+        p.value === true
+          ? 'request-result-cell request-result--ok'
+          : 'request-result-cell request-result--fail',
+      tooltipValueGetter: (p) =>
+        p.data?.isSuccess === true
+          ? 'Respuesta HTTP en rango 2xx (éxito según API)'
+          : 'Respuesta sin éxito o error de aplicación'
     }
   ];
   requestGridDefaultColDef: ColDef<ApiRequestLog> = {
@@ -122,6 +206,7 @@ export class SupportDashboardComponent implements OnInit {
   errorsPageSize = 20;
   errorsTotal = 0;
   errorsTotalPages = 0;
+  readonly errorPageSizeOptions = [10, 20, 50, 100];
 
   requestsPage = 1;
   requestsPageSize = 20;
@@ -140,6 +225,7 @@ export class SupportDashboardComponent implements OnInit {
     page: 1,
     pageSize: 20
   };
+  errorOnlyUnhandled = false;
 
   // Filtros de requests (GET /api/admin/logs/requests — query §3)
   requestFilters: GetRequestsParams = {
@@ -153,9 +239,7 @@ export class SupportDashboardComponent implements OnInit {
   // Inputs datetime-local (hora local) para UX; se convierten a ISO al enviar.
   requestDateFilters = {
     fromDate: '',
-    toDate: '',
-    createdFromDate: '',
-    createdToDate: ''
+    toDate: ''
   };
 
   // Filtros de auditoría
@@ -184,22 +268,20 @@ export class SupportDashboardComponent implements OnInit {
   ngOnInit(): void {
     const initialTab = this.route.snapshot.queryParamMap.get('subtab');
     this.activeSubTab =
-      initialTab === 'errors' ? 'errors' : initialTab === 'audit' ? 'audit' : 'requests';
+      initialTab === 'errors' ? 'errors' : 'requests';
 
     this.route.queryParamMap.subscribe((queryParams) => {
       const tab = queryParams.get('subtab');
       const nextTab: SupportSubTab =
-        tab === 'errors' ? 'errors' : tab === 'audit' ? 'audit' : 'requests';
+        tab === 'errors' ? 'errors' : 'requests';
 
       if (nextTab === this.activeSubTab) return;
       this.activeSubTab = nextTab;
       if (nextTab === 'requests') this.loadRequests();
-      else if (nextTab === 'errors') this.loadErrors();
-      else this.loadAuditLogs();
+      else this.loadErrors();
     });
     if (this.activeSubTab === 'requests') this.loadRequests();
-    else if (this.activeSubTab === 'errors') this.loadErrors();
-    else this.loadAuditLogs();
+    else this.loadErrors();
   }
 
   setSupportSubTab(tab: SupportSubTab): void {
@@ -211,19 +293,11 @@ export class SupportDashboardComponent implements OnInit {
       queryParamsHandling: 'merge'
     });
     if (tab === 'requests') this.loadRequests();
-    else if (tab === 'errors') this.loadErrors();
-    else this.loadAuditLogs();
+    else this.loadErrors();
   }
 
   get isLoadingActiveSubTab(): boolean {
-    switch (this.activeSubTab) {
-      case 'requests':
-        return this.isLoadingRequests;
-      case 'errors':
-        return this.isLoadingErrors;
-      default:
-        return this.isLoadingAudit;
-    }
+    return this.activeSubTab === 'requests' ? this.isLoadingRequests : this.isLoadingErrors;
   }
 
   // ============================================
@@ -236,15 +310,16 @@ export class SupportDashboardComponent implements OnInit {
 
     const params: GetErrorsParams = {
       ...this.errorFilters,
+      isHandled: this.errorOnlyUnhandled ? false : this.errorFilters.isHandled,
       page: this.errorsPage,
       pageSize: this.errorsPageSize
     };
 
     this.supportService.getErrors(params).subscribe({
       next: (response) => {
-        this.errors = response.data.Errors || [];
-        this.errorsTotal = response.data.Total || 0;
-        this.errorsTotalPages = response.data.TotalPages || 0;
+        this.errors = response.data.errors || [];
+        this.errorsTotal = response.data.total || 0;
+        this.errorsTotalPages = response.data.totalPages || 0;
         this.isLoadingErrors = false;
       },
       error: (error) => {
@@ -315,6 +390,7 @@ export class SupportDashboardComponent implements OnInit {
       page: 1,
       pageSize: 20
     };
+    this.errorOnlyUnhandled = false;
     this.errorsPage = 1;
     this.loadErrors();
   }
@@ -329,9 +405,7 @@ export class SupportDashboardComponent implements OnInit {
     this.requestQuickQuery = '';
     this.requestDateFilters = {
       fromDate: '',
-      toDate: '',
-      createdFromDate: '',
-      createdToDate: ''
+      toDate: ''
     };
     this.requestFilters = {
       sortBy: this.requestSortBy,
@@ -366,7 +440,6 @@ export class SupportDashboardComponent implements OnInit {
     const uid = optInt(f.userId);
     if (uid !== undefined) params.userId = uid;
     if (f.method?.trim()) params.method = f.method.trim();
-    if (f.methods?.trim()) params.methods = f.methods.trim();
     if (f.path?.trim()) params.path = f.path.trim();
     if (f.exactPath === true) params.exactPath = true;
     const sc = optInt(f.statusCode);
@@ -379,19 +452,12 @@ export class SupportDashboardComponent implements OnInit {
     if (fromDateIso) params.fromDate = fromDateIso;
     const toDateIso = this.toIsoFromLocalDateTime(this.requestDateFilters.toDate);
     if (toDateIso) params.toDate = toDateIso;
-    const createdFromIso = this.toIsoFromLocalDateTime(this.requestDateFilters.createdFromDate);
-    if (createdFromIso) params.createdFromDate = createdFromIso;
-    const createdToIso = this.toIsoFromLocalDateTime(this.requestDateFilters.createdToDate);
-    if (createdToIso) params.createdToDate = createdToIso;
     const minMs = optInt(f.minElapsedMs);
     if (minMs !== undefined) params.minElapsedMs = minMs;
     const maxMs = optInt(f.maxElapsedMs);
     if (maxMs !== undefined) params.maxElapsedMs = maxMs;
-    if (f.onlyFailed === true) params.onlyFailed = true;
     if (f.isSuccess !== undefined) params.isSuccess = f.isSuccess;
-    if (f.correlationId?.trim()) params.correlationId = f.correlationId.trim();
     if (f.ipAddress?.trim()) params.ipAddress = f.ipAddress.trim();
-    if (f.userAgent?.trim()) params.userAgent = f.userAgent.trim();
     if (f.browserFamily?.trim()) params.browserFamily = f.browserFamily.trim();
     if (f.query?.trim()) params.query = f.query.trim();
 
@@ -421,6 +487,24 @@ export class SupportDashboardComponent implements OnInit {
       this.errorsPage = page;
       this.loadErrors();
     }
+  }
+
+  goToFirstErrorsPage(): void {
+    if (this.errorsPage > 1) this.goToErrorsPage(1);
+  }
+
+  goToLastErrorsPage(): void {
+    if (this.errorsTotalPages > 0 && this.errorsPage < this.errorsTotalPages) {
+      this.goToErrorsPage(this.errorsTotalPages);
+    }
+  }
+
+  onErrorsPageSizeChange(value: string | number): void {
+    const parsed = typeof value === 'string' ? Number(value) : value;
+    if (!Number.isFinite(parsed)) return;
+    this.errorsPageSize = Math.min(100, Math.max(1, Math.trunc(parsed)));
+    this.errorsPage = 1;
+    this.loadErrors();
   }
 
   goToRequestsPage(page: number): void {
@@ -460,7 +544,7 @@ export class SupportDashboardComponent implements OnInit {
   // ============================================
 
   viewErrorDetail(error: ApiErrorLog): void {
-    this.supportService.getErrorById(error.Id).subscribe({
+    this.supportService.getErrorById(error.id).subscribe({
       next: (response) => {
         this.selectedError = response.data;
         this.showErrorDetail = true;
@@ -485,6 +569,10 @@ export class SupportDashboardComponent implements OnInit {
 
   onRequestGridRowClicked(event: RowClickedEvent<ApiRequestLog>): void {
     if (event.data) this.viewRequestDetail(event.data);
+  }
+
+  onErrorGridRowClicked(event: RowClickedEvent<ApiErrorLog>): void {
+    if (event.data) this.viewErrorDetail(event.data);
   }
 
   onRequestGridSortChanged(event: SortChangedEvent<ApiRequestLog>): void {
@@ -608,8 +696,7 @@ export class SupportDashboardComponent implements OnInit {
   /** Recarga los datos de la subpestaña visible */
   reloadActiveSubTab(): void {
     if (this.activeSubTab === 'requests') this.loadRequests();
-    else if (this.activeSubTab === 'errors') this.loadErrors();
-    else this.loadAuditLogs();
+    else this.loadErrors();
   }
 
   // ============================================

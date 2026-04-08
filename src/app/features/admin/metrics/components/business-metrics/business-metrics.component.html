@@ -1,4 +1,11 @@
 <div class="metrics-container">
+  <div class="section-card" *ngIf="isLoadingOverview">
+    Cargando métricas globales...
+  </div>
+
+  <div class="section-card" *ngIf="overviewError">
+    {{ overviewError }}
+  </div>
 
   <!-- Métricas Principales -->
   <div class="main-metrics-grid">

@@ -59,13 +59,6 @@
           title="method — el cliente envía en mayúsculas"
         />
         <input
-          class="filter-input"
-          type="text"
-          placeholder="Métodos CSV (GET,POST)"
-          [(ngModel)]="requestFilters.methods"
-          title="methods"
-        />
-        <input
           class="filter-input filter-input-wide"
           type="text"
           placeholder="Subcadena en path"
@@ -97,34 +90,26 @@
           [(ngModel)]="requestFilters.statusCodeTo"
           title="statusCodeTo"
         />
-        <input
-          class="filter-input"
-          type="datetime-local"
-          placeholder="Desde"
-          [(ngModel)]="requestDateFilters.fromDate"
-          title="fromDate (OccurredAt mínimo)"
-        />
-        <input
-          class="filter-input"
-          type="datetime-local"
-          placeholder="Hasta"
-          [(ngModel)]="requestDateFilters.toDate"
-          title="toDate (OccurredAt máximo)"
-        />
-        <input
-          class="filter-input"
-          type="datetime-local"
-          placeholder="Creado desde"
-          [(ngModel)]="requestDateFilters.createdFromDate"
-          title="createdFromDate (CreatedAt mínimo)"
-        />
-        <input
-          class="filter-input"
-          type="datetime-local"
-          placeholder="Creado hasta"
-          [(ngModel)]="requestDateFilters.createdToDate"
-          title="createdToDate (CreatedAt máximo)"
-        />
+        <div class="filter-field filter-field--datetime">
+          <label class="filter-field__label" for="request-filter-from-date">Ocurrió desde</label>
+          <input
+            id="request-filter-from-date"
+            class="filter-input"
+            type="datetime-local"
+            [(ngModel)]="requestDateFilters.fromDate"
+            title="fromDate: OccurredAt mayor o igual"
+          />
+        </div>
+        <div class="filter-field filter-field--datetime">
+          <label class="filter-field__label" for="request-filter-to-date">Ocurrió hasta</label>
+          <input
+            id="request-filter-to-date"
+            class="filter-input"
+            type="datetime-local"
+            [(ngModel)]="requestDateFilters.toDate"
+            title="toDate: OccurredAt menor o igual"
+          />
+        </div>
         <input
           class="filter-input"
           type="number"
@@ -140,25 +125,11 @@
           title="maxElapsedMs"
         />
         <input
-          class="filter-input filter-input-wide"
-          type="text"
-          placeholder="Correlation ID (GUID)"
-          [(ngModel)]="requestFilters.correlationId"
-          title="correlationId"
-        />
-        <input
           class="filter-input"
           type="text"
           placeholder="IP contains"
           [(ngModel)]="requestFilters.ipAddress"
           title="ipAddress"
-        />
-        <input
-          class="filter-input filter-input-wide"
-          type="text"
-          placeholder="User-Agent contains"
-          [(ngModel)]="requestFilters.userAgent"
-          title="userAgent"
         />
         <select [(ngModel)]="requestFilters.browserFamily" class="filter-select">
           <option [ngValue]="undefined">Navegador: Todos</option>
@@ -169,10 +140,6 @@
           <option value="Opera">Opera</option>
           <option value="Other">Other</option>
         </select>
-        <label class="filter-checkbox">
-          <input type="checkbox" [(ngModel)]="requestFilters.onlyFailed" />
-          Solo fallidos
-        </label>
         <label class="filter-checkbox">
           IsSuccess:
           <select [(ngModel)]="requestFilters.isSuccess" class="filter-select">
@@ -243,101 +210,55 @@
           <option value="Warning">Advertencia</option>
         </select>
         <label class="filter-checkbox">
-          <input type="checkbox" [(ngModel)]="errorFilters.isHandled" />
+          <input type="checkbox" [(ngModel)]="errorOnlyUnhandled" />
           Solo no manejados
         </label>
         <button type="button" class="btn-filter" (click)="applyErrorFilters()">Filtrar</button>
         <button type="button" class="btn-clear" (click)="clearErrorFilters()">Limpiar</button>
       </div>
 
-      <div class="errors-list" *ngIf="!isLoadingErrors">
-        <div class="error-item" *ngFor="let error of errors" (click)="viewErrorDetail(error)">
-          <div class="error-header">
-            <span class="severity-badge" [ngClass]="getSeverityClass(error.Severity)">
-              {{ getSeverityLabel(error.Severity) }}
-            </span>
-            <span class="error-type">{{ error.ExceptionType || 'Error' }}</span>
-          </div>
-          <div class="error-content">
-            <strong>{{ error.TenantName || 'Sistema' }}</strong>
-            <p>{{ error.ExceptionMessage || 'Sin mensaje' }}</p>
-            <div class="error-meta">
-              <span class="timestamp">{{ formatDate(error.OccurredAt) }}</span>
-              <span class="path" *ngIf="error.Path">{{ error.HttpMethod }} {{ error.Path }}</span>
-            </div>
-          </div>
+      <ng-container *ngIf="!isLoadingErrors">
+        <div class="errors-grid-container" *ngIf="errors.length > 0">
+          <ag-grid-angular
+            class="ag-theme-quartz errors-grid"
+            [rowData]="errors"
+            [columnDefs]="errorGridColumnDefs"
+            [defaultColDef]="errorGridDefaultColDef"
+            [animateRows]="true"
+            [pagination]="false"
+            [suppressMultiSort]="true"
+            [tooltipShowDelay]="200"
+            [domLayout]="'normal'"
+            (rowClicked)="onErrorGridRowClicked($event)"
+          />
         </div>
-        <div class="empty-state" *ngIf="errors.length === 0">
+        <div class="empty-state errors-log-empty" *ngIf="errors.length === 0">
           <p>No hay errores registrados</p>
         </div>
-      </div>
+      </ng-container>
       <div class="loading-state" *ngIf="isLoadingErrors">
         <p>Cargando errores...</p>
       </div>
 
-      <div class="pagination" *ngIf="errorsTotalPages > 1">
-        <button type="button" (click)="goToErrorsPage(errorsPage - 1)" [disabled]="errorsPage === 1">« Anterior</button>
-        <span>Página {{ errorsPage }} de {{ errorsTotalPages }} ({{ errorsTotal }} total)</span>
-        <button type="button" (click)="goToErrorsPage(errorsPage + 1)" [disabled]="errorsPage === errorsTotalPages">Siguiente »</button>
-      </div>
-    </div>
-
-    <!-- 3. Auditoría -->
-    <div
-      class="section-card support-tab-panel support-tab-panel--wide"
-      *ngIf="activeSubTab === 'audit'"
-      role="tabpanel"
-    >
-      <!-- Filtros de auditoría -->
-      <div class="filters-section">
-        <input type="text" [(ngModel)]="auditFilters.actionType" placeholder="Tipo de acción" class="filter-input" />
-        <input type="text" [(ngModel)]="auditFilters.entityType" placeholder="Tipo de entidad" class="filter-input" />
-        <button type="button" class="btn-filter" (click)="applyAuditFilters()">Filtrar</button>
-        <button type="button" class="btn-clear" (click)="clearAuditFilters()">Limpiar</button>
-      </div>
-
-      <div class="audit-table-container" *ngIf="!isLoadingAudit">
-        <table class="audit-table">
-          <thead>
-            <tr>
-              <th>Usuario</th>
-              <th>Cliente</th>
-              <th>Acción</th>
-              <th>Entidad</th>
-              <th>Descripción</th>
-              <th>Fecha/Hora</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let log of auditLogs">
-              <td>{{ log.UserName }}</td>
-              <td>{{ log.TenantName || 'Sistema' }}</td>
-              <td><span class="action-badge">{{ log.ActionType }}</span></td>
-              <td>{{ log.EntityType }} #{{ log.EntityId }}</td>
-              <td class="description-cell">{{ log.Description }}</td>
-              <td>{{ formatDate(log.OccurredAt) }}</td>
-              <td>
-                <button class="btn-view" (click)="viewAuditDetail(log)">Ver Detalle</button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-        <div class="empty-state" *ngIf="auditLogs.length === 0">
-          <p>No hay eventos de auditoría registrados</p>
+      <div class="pagination errors-pagination" *ngIf="errorsTotal > 0">
+        <div class="errors-pagination__page-size">
+          <label for="errorsPageSize">Filas:</label>
+          <select
+            id="errorsPageSize"
+            [ngModel]="errorsPageSize"
+            (ngModelChange)="onErrorsPageSizeChange($event)"
+          >
+            <option *ngFor="let size of errorPageSizeOptions" [ngValue]="size">{{ size }}</option>
+          </select>
         </div>
-      </div>
-      <div class="loading-state" *ngIf="isLoadingAudit">
-        <p>Cargando auditoría...</p>
-      </div>
-
-      <!-- Paginación de auditoría -->
-      <div class="pagination" *ngIf="auditTotalPages > 1">
-        <button type="button" (click)="goToAuditPage(auditPage - 1)" [disabled]="auditPage === 1">« Anterior</button>
-        <span>Página {{ auditPage }} de {{ auditTotalPages }} ({{ auditTotal }} total)</span>
-        <button type="button" (click)="goToAuditPage(auditPage + 1)" [disabled]="auditPage === auditTotalPages">Siguiente »</button>
+        <button type="button" (click)="goToFirstErrorsPage()" [disabled]="errorsPage === 1">« Primera</button>
+        <button type="button" (click)="goToErrorsPage(errorsPage - 1)" [disabled]="errorsPage === 1">‹ Anterior</button>
+        <span>Página {{ errorsPage }} de {{ errorsTotalPages }} ({{ errorsTotal }} total)</span>
+        <button type="button" (click)="goToErrorsPage(errorsPage + 1)" [disabled]="errorsPage === errorsTotalPages">Siguiente ›</button>
+        <button type="button" (click)="goToLastErrorsPage()" [disabled]="errorsPage === errorsTotalPages">Última »</button>
       </div>
     </div>
+
   </div>
 
   <!-- Modal de Detalle de Error -->
@@ -350,26 +271,26 @@
       <div class="modal-body" *ngIf="selectedError">
         <div class="detail-section">
           <h4>Información General</h4>
-          <p><strong>ID:</strong> {{ selectedError.Id }}</p>
-          <p><strong>Severidad:</strong> <span [ngClass]="getSeverityClass(selectedError.Severity)">{{ getSeverityLabel(selectedError.Severity) }}</span></p>
-          <p><strong>Tipo:</strong> {{ selectedError.ExceptionType || 'N/A' }}</p>
-          <p><strong>Mensaje:</strong> {{ selectedError.ExceptionMessage || 'N/A' }}</p>
-          <p><strong>Manejado:</strong> {{ selectedError.IsHandled ? 'Sí' : 'No' }}</p>
+          <p><strong>ID:</strong> {{ selectedError.id }}</p>
+          <p><strong>Severidad:</strong> <span [ngClass]="getSeverityClass(selectedError.severity)">{{ getSeverityLabel(selectedError.severity) }}</span></p>
+          <p><strong>Tipo:</strong> {{ selectedError.exceptionType || 'N/A' }}</p>
+          <p><strong>Mensaje:</strong> {{ selectedError.exceptionMessage || 'N/A' }}</p>
+          <p><strong>Manejado:</strong> {{ selectedError.isHandled ? 'Sí' : 'No' }}</p>
         </div>
-        <div class="detail-section" *ngIf="selectedError.Path">
+        <div class="detail-section" *ngIf="selectedError.path">
           <h4>Request</h4>
-          <p><strong>Método:</strong> {{ selectedError.HttpMethod }}</p>
-          <p><strong>Ruta:</strong> {{ selectedError.Path }}</p>
-          <p><strong>Status:</strong> {{ selectedError.StatusCode }}</p>
+          <p><strong>Método:</strong> {{ selectedError.httpMethod }}</p>
+          <p><strong>Ruta:</strong> {{ selectedError.path }}</p>
+          <p><strong>Status:</strong> {{ selectedError.statusCode }}</p>
         </div>
-        <div class="detail-section" *ngIf="selectedError.StackTrace">
+        <div class="detail-section" *ngIf="selectedError.stackTrace">
           <h4>Stack Trace</h4>
-          <pre class="stack-trace">{{ selectedError.StackTrace }}</pre>
+          <pre class="stack-trace">{{ selectedError.stackTrace }}</pre>
         </div>
         <div class="detail-section">
           <h4>Fechas</h4>
-          <p><strong>Ocurrido:</strong> {{ formatDate(selectedError.OccurredAt) }}</p>
-          <p><strong>Creado:</strong> {{ formatDate(selectedError.CreatedAt) }}</p>
+          <p><strong>Ocurrido:</strong> {{ formatDate(selectedError.occurredAt) }}</p>
+          <p><strong>Creado:</strong> {{ formatDate(selectedError.createdAt) }}</p>
         </div>
       </div>
     </div>
@@ -393,6 +314,11 @@
           <p><strong>Status:</strong> <span [ngClass]="getStatusClass(selectedRequest.statusCode)">{{ selectedRequest.statusCode }}</span></p>
           <p><strong>Duración:</strong> {{ selectedRequest.elapsedMs }}ms</p>
           <p><strong>Éxito:</strong> {{ selectedRequest.isSuccess ? 'Sí' : 'No' }}</p>
+          <p><strong>Navegador:</strong> {{ selectedRequest.browserFamily || 'N/A' }}</p>
+        </div>
+        <div class="detail-section" *ngIf="selectedRequest.failureSummary">
+          <h4>Motivo del fallo</h4>
+          <p class="failure-summary-text">{{ selectedRequest.failureSummary }}</p>
         </div>
         <div class="detail-section" *ngIf="selectedRequest.tenantName">
           <h4>Contexto</h4>
@@ -401,7 +327,7 @@
           <p><strong>IP:</strong> {{ selectedRequest.ipAddress || 'N/A' }}</p>
           <p><strong>User Agent:</strong> {{ selectedRequest.userAgent || 'N/A' }}</p>
         </div>
-        <div class="detail-section" *ngIf="selectedRequest.errorLogs?.length">
+        <div class="detail-section" *ngIf="selectedRequest.errorLogs.length">
           <h4>Errores Relacionados</h4>
           <div *ngFor="let error of selectedRequest.errorLogs" class="error-summary">
             <p><strong>{{ error.exceptionType }}:</strong> {{ error.exceptionMessage }}</p>
@@ -417,38 +343,4 @@
     </div>
   </div>
 
-  <!-- Modal de Detalle de Auditoría -->
-  <div class="modal-overlay" *ngIf="showAuditDetail" (click)="closeAuditDetail()">
-    <div class="modal-content" (click)="$event.stopPropagation()">
-      <div class="modal-header">
-        <h3>Detalle de Auditoría</h3>
-        <button class="btn-close" (click)="closeAuditDetail()">×</button>
-      </div>
-      <div class="modal-body" *ngIf="selectedAudit">
-        <div class="detail-section">
-          <h4>Información General</h4>
-          <p><strong>ID:</strong> {{ selectedAudit.Id }}</p>
-          <p><strong>Usuario:</strong> {{ selectedAudit.UserName }} ({{ selectedAudit.UserEmail }})</p>
-          <p><strong>Cliente:</strong> {{ selectedAudit.TenantName || 'Sistema' }}</p>
-          <p><strong>Tipo de Acción:</strong> {{ selectedAudit.ActionType }}</p>
-          <p><strong>Entidad:</strong> {{ selectedAudit.EntityType }} #{{ selectedAudit.EntityId }}</p>
-          <p><strong>Descripción:</strong> {{ selectedAudit.Description }}</p>
-        </div>
-        <div class="detail-section" *ngIf="selectedAudit.OldValues">
-          <h4>Valores Anteriores</h4>
-          <pre class="json-preview">{{ selectedAudit.OldValues }}</pre>
-        </div>
-        <div class="detail-section" *ngIf="selectedAudit.NewValues">
-          <h4>Valores Nuevos</h4>
-          <pre class="json-preview">{{ selectedAudit.NewValues }}</pre>
-        </div>
-        <div class="detail-section">
-          <h4>Fechas</h4>
-          <p><strong>Ocurrido:</strong> {{ formatDate(selectedAudit.OccurredAt) }}</p>
-          <p><strong>Creado:</strong> {{ formatDate(selectedAudit.CreatedAt) }}</p>
-          <p><strong>Correlation ID:</strong> {{ selectedAudit.CorrelationId || 'N/A' }}</p>
-        </div>
-      </div>
-    </div>
-  </div>
 </div>

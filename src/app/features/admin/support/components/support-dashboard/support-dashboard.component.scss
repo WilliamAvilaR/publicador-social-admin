@@ -493,12 +493,31 @@
   }
 
   &.request-filters-wrap {
-    align-items: flex-start;
+    align-items: flex-end;
 
     .filter-input-wide {
       min-width: 200px;
       flex: 1 1 180px;
     }
+  }
+
+  .filter-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 160px;
+    flex: 0 1 auto;
+
+    &--datetime .filter-input {
+      min-width: 210px;
+    }
+  }
+
+  .filter-field__label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    line-height: 1.2;
   }
 
   &.request-quick-search-wrap {
@@ -520,6 +539,28 @@
 }
 
 .requests-grid {
+  width: 100%;
+  height: 520px;
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  overflow: hidden;
+
+  --ag-background-color: var(--bg-primary);
+  --ag-foreground-color: var(--text-secondary);
+  --ag-header-background-color: var(--bg-tertiary);
+  --ag-header-foreground-color: var(--text-primary);
+  --ag-border-color: var(--border-primary);
+  --ag-row-border-color: var(--border-primary);
+  --ag-selected-row-background-color: var(--accent-primary-light);
+  --ag-font-size: 12px;
+  --ag-font-family: inherit;
+}
+
+.errors-grid-container {
+  width: 100%;
+}
+
+.errors-grid {
   width: 100%;
   height: 520px;
   border: 1px solid var(--border-primary);
@@ -561,6 +602,70 @@
 ::ng-deep .requests-grid .request-status-cell.status-info {
   background-color: var(--info-bg);
   color: var(--info-text);
+}
+
+::ng-deep .requests-grid .request-result-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+
+::ng-deep .requests-grid .request-result--ok {
+  color: var(--success-text);
+}
+
+::ng-deep .requests-grid .request-result--fail {
+  color: var(--error-text);
+}
+
+::ng-deep .errors-grid .request-status-cell {
+  font-weight: 700;
+  text-align: center;
+  border-radius: 6px;
+}
+
+::ng-deep .errors-grid .request-status-cell.status-success {
+  background-color: var(--success-bg);
+  color: var(--success-text);
+}
+
+::ng-deep .errors-grid .request-status-cell.status-warning {
+  background-color: var(--warning-bg);
+  color: var(--warning-text);
+}
+
+::ng-deep .errors-grid .request-status-cell.status-error {
+  background-color: var(--error-bg);
+  color: var(--error-text);
+}
+
+::ng-deep .errors-grid .request-status-cell.status-info {
+  background-color: var(--info-bg);
+  color: var(--info-text);
+}
+
+::ng-deep .errors-grid .error-severity-cell {
+  font-weight: 600;
+  border-radius: 6px;
+  text-align: center;
+}
+
+::ng-deep .errors-grid .error-severity-cell.severity-high {
+  background-color: var(--error-bg);
+  color: var(--error-text);
+}
+
+::ng-deep .errors-grid .error-severity-cell.severity-medium {
+  background-color: var(--warning-bg);
+  color: var(--warning-text);
+}
+
+::ng-deep .errors-grid .error-severity-cell.severity-low {
+  background-color: var(--info-bg, #d1ecf1);
+  color: var(--info-text, #0c5460);
 }
 
 // ============================================
@@ -683,6 +788,26 @@
   }
 }
 
+.errors-pagination {
+  .errors-pagination__page-size {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-right: 8px;
+    color: var(--text-secondary);
+    font-size: 13px;
+
+    select {
+      padding: 6px 8px;
+      border: 1px solid var(--border-primary);
+      border-radius: 4px;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      font-size: 13px;
+    }
+  }
+}
+
 // ============================================
 // MODALES
 // ============================================
@@ -785,6 +910,16 @@
         max-height: 300px;
         overflow-y: auto;
         border: 1px solid var(--border-primary);
+      }
+
+      .failure-summary-text {
+        margin: 0;
+        padding: 12px;
+        background-color: var(--bg-secondary);
+        border-radius: 6px;
+        border-left: 4px solid var(--warning-text);
+        white-space: pre-wrap;
+        word-break: break-word;
       }
 
       .error-summary {

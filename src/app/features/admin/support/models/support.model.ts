@@ -26,17 +26,19 @@ export interface ApiRequestLog {
   createdAt: string;
 }
 
-/** Errores anidados en el detalle de un request (camelCase) */
+/** Errores anidados en el detalle de un request — GET /api/admin/logs/requests/{requestId} (AdminRequestLogErrorSummaryDto) */
 export interface ApiRequestLogErrorItem {
   id: number;
   exceptionType?: string | null;
   exceptionMessage?: string | null;
-  severity?: string | null;
-  isHandled?: boolean | null;
+  severity: string;
+  isHandled: boolean;
 }
 
+/** Detalle de request — GET /api/admin/logs/requests/{requestId} (AdminRequestLogDetailDto, ApiResponse.data) */
 export interface ApiRequestLogDetail extends ApiRequestLog {
-  errorLogs?: ApiRequestLogErrorItem[];
+  failureSummary?: string | null;
+  errorLogs: ApiRequestLogErrorItem[];
 }
 
 export interface GetRequestsParams {
@@ -92,31 +94,31 @@ export interface RequestDetailResponse {
 // ============================================
 
 export interface ApiErrorLog {
-  Id: number;
-  ApiRequestLogId?: number | null;
-  CorrelationId?: string | null;
-  UserId?: number | null;
-  TenantId?: number | null;
-  TenantName?: string | null;
-  ExceptionType?: string | null;
-  ExceptionMessage?: string | null;
-  StackTrace?: string | null;
-  InnerException?: string | null;
-  Severity: string;
-  IsHandled: boolean;
-  Path?: string | null;
-  HttpMethod?: string | null;
-  StatusCode?: number | null;
-  OccurredAt: string;
-  CreatedAt: string;
+  id: number;
+  apiRequestLogId?: number | null;
+  correlationId?: string | null;
+  userId?: number | null;
+  tenantId?: number | null;
+  tenantName?: string | null;
+  exceptionType?: string | null;
+  exceptionMessage?: string | null;
+  stackTrace?: string | null;
+  innerException?: string | null;
+  severity: string;
+  isHandled: boolean;
+  path?: string | null;
+  httpMethod?: string | null;
+  statusCode?: number | null;
+  occurredAt: string;
+  createdAt: string;
 }
 
 export interface ApiErrorLogDetail extends ApiErrorLog {
-  RequestLog?: {
-    Id: number;
-    Path: string;
-    HttpMethod: string;
-    StatusCode: number;
+  requestLog?: {
+    id: number;
+    path: string;
+    httpMethod: string;
+    statusCode: number;
   } | null;
 }
 
@@ -136,27 +138,30 @@ export interface GetErrorsParams {
 
 export interface ErrorsListResponse {
   data: {
-    Errors: ApiErrorLog[];
-    Total: number;
-    Page: number;
-    PageSize: number;
-    TotalPages: number;
+    errors: ApiErrorLog[];
+    total: number;
+    page: number;
+    pageSize: number;
+    totalPages: number;
   };
-  success: boolean;
+  requiresReauth: boolean;
+  meta: unknown | null;
 }
 
 export interface ErrorDetailResponse {
   data: ApiErrorLogDetail;
-  success: boolean;
+  requiresReauth: boolean;
+  meta: unknown | null;
 }
 
 export interface ErrorsByCorrelationResponse {
   data: {
-    CorrelationId: string;
-    Errors: ApiErrorLog[];
-    Count: number;
+    correlationId: string;
+    errors: ApiErrorLog[];
+    count: number;
   };
-  success: boolean;
+  requiresReauth: boolean;
+  meta: unknown | null;
 }
 
 // ============================================

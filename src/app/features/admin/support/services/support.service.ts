@@ -13,6 +13,7 @@ import {
   ErrorDetailResponse,
   ErrorsByCorrelationResponse,
   GetErrorsParams,
+  ApiErrorLog,
   AuditListResponse,
   AuditDetailResponse,
   GetAuditParams,
@@ -188,7 +189,8 @@ export class SupportService {
       }
     }
 
-    return this.http.get<ErrorsListResponse>(`${this.logsApiUrl}/errors`, { params: httpParams }).pipe(
+    return this.http.get<unknown>(`${this.logsApiUrl}/errors`, { params: httpParams }).pipe(
+      map((body) => this.normalizeErrorsListResponse(body)),
       catchError(this.handleError)
     );
   }
@@ -199,7 +201,8 @@ export class SupportService {
    * @returns Observable con el detalle del error
    */
   getErrorById(errorId: number): Observable<ErrorDetailResponse> {
-    return this.http.get<ErrorDetailResponse>(`${this.logsApiUrl}/errors/${errorId}`).pipe(
+    return this.http.get<unknown>(`${this.logsApiUrl}/errors/${errorId}`).pipe(
+      map((body) => this.normalizeErrorDetailResponse(body)),
       catchError(this.handleError)
     );
   }
@@ -210,7 +213,8 @@ export class SupportService {
    * @returns Observable con los errores relacionados
    */
   getErrorsByCorrelation(correlationId: string): Observable<ErrorsByCorrelationResponse> {
-    return this.http.get<ErrorsByCorrelationResponse>(`${this.logsApiUrl}/errors/by-correlation/${correlationId}`).pipe(
+    return this.http.get<unknown>(`${this.logsApiUrl}/errors/by-correlation/${correlationId}`).pipe(
+      map((body) => this.normalizeErrorsByCorrelationResponse(body)),
       catchError(this.handleError)
     );
   }
@@ -331,12 +335,14 @@ export class SupportService {
 
   private normalizeRequestLogDetailPayload(data: Record<string, unknown>): ApiRequestLogDetail {
     const base = this.normalizeRequestLog(data);
+    const fs = data['failureSummary'] ?? data['FailureSummary'];
+    const failureSummary =
+      fs === undefined || fs === null ? null : String(fs);
     const errorRaw = (data['errorLogs'] ?? data['ErrorLogs']) as unknown[] | undefined;
-    const errorLogs =
-      Array.isArray(errorRaw) && errorRaw.length > 0
-        ? errorRaw.map((e) => this.normalizeRequestErrorItem(e as Record<string, unknown>))
-        : undefined;
-    return { ...base, errorLogs };
+    const errorLogs = Array.isArray(errorRaw)
+      ? errorRaw.map((e) => this.normalizeRequestErrorItem(e as Record<string, unknown>))
+      : [];
+    return { ...base, failureSummary, errorLogs };
   }
 
   private normalizeRequestErrorItem(e: Record<string, unknown>): ApiRequestLogErrorItem {
@@ -344,8 +350,77 @@ export class SupportService {
       id: Number(e['id'] ?? e['Id']),
       exceptionType: (e['exceptionType'] ?? e['ExceptionType']) as string | null | undefined,
       exceptionMessage: (e['exceptionMessage'] ?? e['ExceptionMessage']) as string | null | undefined,
-      severity: (e['severity'] ?? e['Severity']) as string | null | undefined,
-      isHandled: (e['isHandled'] ?? e['IsHandled']) as boolean | null | undefined
+      severity: String(e['severity'] ?? e['Severity'] ?? ''),
+      isHandled: Boolean(e['isHandled'] ?? e['IsHandled'])
+    };
+  }
+
+  // ============================================
+  // ERROR LOGS — normalización camelCase (contrato MD) o PascalCase legado
+  // ============================================
+
+  private normalizeErrorsListResponse(body: unknown): ErrorsListResponse {
+    const b = body as Record<string, unknown>;
+    const raw = (b?.['data'] ?? b) as Record<string, unknown>;
+    const errorsRaw = (raw['errors'] ?? raw['Errors'] ?? []) as unknown[];
+    return {
+      data: {
+        errors: errorsRaw.map((row) => this.normalizeErrorLog(row as Record<string, unknown>)),
+        total: Number(raw['total'] ?? raw['Total'] ?? 0),
+        page: Number(raw['page'] ?? raw['Page'] ?? 1),
+        pageSize: Number(raw['pageSize'] ?? raw['PageSize'] ?? 20),
+        totalPages: Number(raw['totalPages'] ?? raw['TotalPages'] ?? 0)
+      },
+      requiresReauth: Boolean(b?.['requiresReauth']),
+      meta: (b?.['meta'] as unknown) ?? null
+    };
+  }
+
+  private normalizeErrorDetailResponse(body: unknown): ErrorDetailResponse {
+    const b = body as Record<string, unknown>;
+    const data = b?.['data'] as Record<string, unknown> | undefined;
+    const payload = data ?? b;
+    return {
+      data: this.normalizeErrorLog(payload),
+      requiresReauth: Boolean(b?.['requiresReauth']),
+      meta: (b?.['meta'] as unknown) ?? null
+    };
+  }
+
+  private normalizeErrorsByCorrelationResponse(body: unknown): ErrorsByCorrelationResponse {
+    const b = body as Record<string, unknown>;
+    const raw = (b?.['data'] ?? b) as Record<string, unknown>;
+    const errorsRaw = (raw['errors'] ?? raw['Errors'] ?? []) as unknown[];
+    return {
+      data: {
+        correlationId: String(raw['correlationId'] ?? raw['CorrelationId'] ?? ''),
+        errors: errorsRaw.map((row) => this.normalizeErrorLog(row as Record<string, unknown>)),
+        count: Number(raw['count'] ?? raw['Count'] ?? 0)
+      },
+      requiresReauth: Boolean(b?.['requiresReauth']),
+      meta: (b?.['meta'] as unknown) ?? null
+    };
+  }
+
+  private normalizeErrorLog(row: Record<string, unknown>): ApiErrorLog {
+    return {
+      id: Number(row['id'] ?? row['Id']),
+      apiRequestLogId: (row['apiRequestLogId'] ?? row['ApiRequestLogId']) as number | null | undefined,
+      correlationId: (row['correlationId'] ?? row['CorrelationId']) as string | null | undefined,
+      userId: (row['userId'] ?? row['UserId']) as number | null | undefined,
+      tenantId: (row['tenantId'] ?? row['TenantId']) as number | null | undefined,
+      tenantName: (row['tenantName'] ?? row['TenantName']) as string | null | undefined,
+      exceptionType: (row['exceptionType'] ?? row['ExceptionType']) as string | null | undefined,
+      exceptionMessage: (row['exceptionMessage'] ?? row['ExceptionMessage']) as string | null | undefined,
+      stackTrace: (row['stackTrace'] ?? row['StackTrace']) as string | null | undefined,
+      innerException: (row['innerException'] ?? row['InnerException']) as string | null | undefined,
+      severity: String(row['severity'] ?? row['Severity'] ?? ''),
+      isHandled: Boolean(row['isHandled'] ?? row['IsHandled']),
+      path: (row['path'] ?? row['Path']) as string | null | undefined,
+      httpMethod: (row['httpMethod'] ?? row['HttpMethod']) as string | null | undefined,
+      statusCode: (row['statusCode'] ?? row['StatusCode']) as number | null | undefined,
+      occurredAt: String(row['occurredAt'] ?? row['OccurredAt'] ?? ''),
+      createdAt: String(row['createdAt'] ?? row['CreatedAt'] ?? '')
     };
   }
 

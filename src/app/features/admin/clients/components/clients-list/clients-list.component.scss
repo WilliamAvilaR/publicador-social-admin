@@ -46,9 +46,15 @@
     display: flex;
     gap: 10px;
 
+    .search-input-wrap {
+      flex: 1;
+      min-width: 0;
+    }
+
     input {
       flex: 1;
       padding: 10px 15px;
+      padding-left: 40px;
       border: 1px solid var(--border-primary);
       border-radius: 4px;
       background-color: var(--bg-secondary);

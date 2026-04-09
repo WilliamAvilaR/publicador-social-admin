@@ -523,9 +523,16 @@
   &.request-quick-search-wrap {
     align-items: center;
 
-    .filter-input-wide {
-      min-width: 320px;
+    .request-quick-search-field {
       flex: 1 1 320px;
+      min-width: 320px;
+    }
+
+    .filter-input-wide {
+      min-width: 0;
+      flex: 1 1 auto;
+      width: 100%;
+      padding-left: 36px;
     }
   }
 }

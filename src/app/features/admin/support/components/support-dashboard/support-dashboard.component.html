@@ -16,14 +16,17 @@
     >
       <!-- Filtros de requests (contrato query §3) -->
       <div class="filters-section request-quick-search-wrap">
-        <input
-          class="filter-input filter-input-wide"
-          type="text"
-          placeholder="Buscar en ruta, querystring, IP o User-Agent"
-          [(ngModel)]="requestQuickQuery"
-          (keyup.enter)="applyRequestFilters()"
-          title="query"
-        />
+        <div class="search-input-wrap request-quick-search-field">
+          <img class="search-input-icon" src="assets/icons/Buscador.svg" width="20" height="20" alt="" />
+          <input
+            class="filter-input filter-input-wide"
+            type="text"
+            placeholder="Buscar en ruta, querystring, IP o User-Agent"
+            [(ngModel)]="requestQuickQuery"
+            (keyup.enter)="applyRequestFilters()"
+            title="query"
+          />
+        </div>
         <button type="button" class="btn-filter" (click)="applyRequestFilters()">Buscar</button>
         <button type="button" class="btn-clear" (click)="clearRequestFilters()">Limpiar</button>
         <button

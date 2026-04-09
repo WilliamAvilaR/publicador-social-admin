@@ -30,6 +30,20 @@
   }
 }
 
+.overview-section-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-primary);
+  font-size: 22px;
+  margin-bottom: 20px;
+
+  .overview-section-heading__icon {
+    flex-shrink: 0;
+    object-fit: contain;
+  }
+}
+
 .info-card {
   background-color: var(--bg-primary);
   border-radius: 8px;
@@ -90,7 +104,8 @@
     border-bottom: 2px solid var(--border-primary);
 
     .sensitive-icon {
-      font-size: 24px;
+      flex-shrink: 0;
+      object-fit: contain;
     }
 
     h3 {
@@ -137,7 +152,8 @@
     border-bottom: 2px solid var(--border-primary);
 
     .owner-icon {
-      font-size: 24px;
+      flex-shrink: 0;
+      object-fit: contain;
     }
 
     h3 {
@@ -191,8 +207,10 @@
   }
 
   .card-icon {
-    font-size: 40px;
+    width: 40px;
+    height: 40px;
     flex-shrink: 0;
+    object-fit: contain;
   }
 
   .card-content {

@@ -20,19 +20,19 @@
     <aside class="dashboard-sidebar">
       <nav class="dashboard-nav">
         <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
-          <span class="nav-icon">📊</span>
+          <img class="nav-icon" src="assets/icons/Inicio.svg" width="24" height="24" alt="" />
           <span class="nav-text">Inicio</span>
         </a>
         <a routerLink="/dashboard/clientes" routerLinkActive="active">
-          <span class="nav-icon">👥</span>
+          <img class="nav-icon" src="assets/icons/Clientes.svg" width="24" height="24" alt="" />
           <span class="nav-text">Gestión de Clientes</span>
         </a>
         <a routerLink="/dashboard/suscripciones" routerLinkActive="active">
-          <span class="nav-icon">💳</span>
+          <img class="nav-icon" src="assets/icons/Suscripciones.svg" width="24" height="24" alt="" />
           <span class="nav-text">Suscripciones</span>
         </a>
         <a routerLink="/dashboard/planes" routerLinkActive="active">
-          <span class="nav-icon">📦</span>
+          <img class="nav-icon" src="assets/icons/Planes.svg" width="24" height="24" alt="" />
           <span class="nav-text">Gestión de Planes</span>
         </a>
         <div class="nav-accordion" [class.nav-accordion--open]="supportMenuOpen">
@@ -42,21 +42,30 @@
             [class.active]="supportMenuOpen"
             (click)="toggleSupportMenu()"
           >
-            <span class="nav-icon">🛠️</span>
+            <img class="nav-icon" src="assets/icons/Soporte.svg" width="24" height="24" alt="" />
             <span class="nav-text">Soporte Técnico</span>
-            <span class="nav-accordion-arrow">{{ supportMenuOpen ? '▾' : '▸' }}</span>
+            <img
+              class="nav-accordion-arrow"
+              [src]="supportMenuOpen ? 'assets/icons/Flecha%20derecha.svg' : 'assets/icons/Flecha%20abajo.svg'"
+              width="16"
+              height="16"
+              alt=""
+              aria-hidden="true"
+            />
           </button>
           <div class="nav-submenu" *ngIf="supportMenuOpen">
             <a routerLink="/dashboard/soporte" [queryParams]="{ subtab: 'requests' }" routerLinkActive="active">
-              <span class="nav-text">🌐 Requests HTTP</span>
+              <img class="nav-icon nav-icon--sub" src="assets/icons/Requests%20HTTP.svg" width="20" height="20" alt="" />
+              <span class="nav-text">Requests HTTP</span>
             </a>
             <a routerLink="/dashboard/soporte" [queryParams]="{ subtab: 'errors' }" routerLinkActive="active">
-              <span class="nav-text">⚠️ Errores del Sistema</span>
+              <img class="nav-icon nav-icon--sub" src="assets/icons/Errores%20del%20Sistema.svg" width="20" height="20" alt="" />
+              <span class="nav-text">Errores del Sistema</span>
             </a>
           </div>
         </div>
         <a routerLink="/dashboard/metricas" routerLinkActive="active">
-          <span class="nav-icon">📈</span>
+          <img class="nav-icon" src="assets/icons/Metricas.svg" width="24" height="24" alt="" />
           <span class="nav-text">Métricas Globales</span>
         </a>
       </nav>

@@ -41,8 +41,12 @@
   }
 
   .metric-icon {
-    font-size: 32px;
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    object-fit: contain;
     margin-bottom: 15px;
+    display: block;
   }
 
   .metric-content {
@@ -98,12 +102,22 @@
   box-shadow: var(--shadow-sm);
   margin-bottom: 20px;
 
-  h2 {
+  .section-card__heading {
+    display: flex;
+    align-items: center;
+    gap: 10px;
     color: var(--text-primary);
     font-size: 20px;
-    margin-bottom: 20px;
+    margin: 0 0 20px;
     padding-bottom: 10px;
     border-bottom: 2px solid var(--border-primary);
+  }
+
+  .section-card__heading-icon {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    object-fit: contain;
   }
 }
 

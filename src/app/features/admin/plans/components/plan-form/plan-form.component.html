@@ -1,10 +1,12 @@
 <div class="plan-form-container">
   <!-- Mensajes de error y éxito -->
   <div class="error-message" *ngIf="errorMessage">
-    ⚠️ {{ errorMessage }}
+    <img src="assets/icons/Errores del Sistema.svg" width="16" height="16" alt="" aria-hidden="true" />
+    {{ errorMessage }}
   </div>
   <div class="success-message" *ngIf="successMessage">
-    ✅ {{ successMessage }}
+    <img src="assets/icons/Check.svg" width="16" height="16" alt="" aria-hidden="true" />
+    {{ successMessage }}
   </div>
 
   <!-- Estado de carga -->
@@ -162,7 +164,9 @@
                 <div class="feature-description">{{ feature.Description }}</div>
                 <!-- Hint sobre límites relacionados -->
                 <div class="feature-hint" *ngIf="getFeatureHint(feature.Key)">
-                  <span class="hint-icon">💡</span>
+                  <span class="hint-icon">
+                    <img src="assets/icons/Foco.svg" width="16" height="16" alt="" aria-hidden="true" />
+                  </span>
                   <div class="hint-text">
                     <div *ngFor="let line of getFeatureHintLines(feature.Key)">{{ line }}</div>
                   </div>
@@ -266,7 +270,8 @@
               <div 
                 *ngIf="isFeatureEnabled(feature.Key)"
                 class="preview-feature">
-                ✓ {{ feature.Name }}
+                <img src="assets/icons/check2.svg" width="16" height="16" alt="" aria-hidden="true" />
+                {{ feature.Name }}
               </div>
             </ng-container>
             <div *ngIf="!hasEnabledFeatures" class="preview-empty">

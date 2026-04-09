@@ -1,13 +1,15 @@
 <div class="plans-container">
   <div class="page-actions">
     <a routerLink="/dashboard/planes/nuevo" class="btn-create">
-      ➕ Crear Nuevo Plan
+      <img src="assets/icons/Crear.svg" width="16" height="16" alt="" aria-hidden="true" />
+      Crear Nuevo Plan
     </a>
   </div>
 
   <!-- Mensaje de error -->
   <div class="error-message" *ngIf="errorMessage">
-    ⚠️ {{ errorMessage }}
+    <img src="assets/icons/Errores del Sistema.svg" width="16" height="16" alt="" aria-hidden="true" />
+    {{ errorMessage }}
   </div>
 
   <!-- Estado de carga -->
@@ -60,7 +62,8 @@
               <div class="actions">
                 <!-- Editamos por código, usando el nuevo endpoint GET /api/admin/plans/by-code/{code} -->
                 <a [routerLink]="['/dashboard/planes', plan.Code]" class="btn-edit">
-                  ✏️ Editar
+                  <img src="assets/icons/Editar.svg" width="16" height="16" alt="" aria-hidden="true" />
+                  Editar
                 </a>
               </div>
             </td>
@@ -72,7 +75,8 @@
       <div class="empty-state" *ngIf="plans.length === 0">
         <p>No hay planes disponibles. Crea tu primer plan para comenzar.</p>
         <a routerLink="/dashboard/planes/nuevo" class="btn-create">
-          ➕ Crear Primer Plan
+          <img src="assets/icons/Crear.svg" width="16" height="16" alt="" aria-hidden="true" />
+          Crear Primer Plan
         </a>
       </div>
     </div>

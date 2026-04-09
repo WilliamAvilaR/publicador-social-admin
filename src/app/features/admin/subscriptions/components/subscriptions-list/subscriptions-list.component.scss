@@ -183,9 +183,14 @@
       gap: 8px;
 
       &::before {
-        content: '✓';
-        color: var(--success-text);
-        font-weight: bold;
+        content: '';
+        width: 14px;
+        height: 14px;
+        display: inline-block;
+        background-image: url('/assets/icons/check2.svg');
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
       }
     }
   }

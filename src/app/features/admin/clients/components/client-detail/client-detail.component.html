@@ -9,12 +9,14 @@
 
   <!-- Mensaje de error -->
   <div class="error-message" *ngIf="errorMessage">
-    ⚠️ {{ errorMessage }}
+    <img src="assets/icons/Errores del Sistema.svg" width="16" height="16" alt="" aria-hidden="true" />
+    {{ errorMessage }}
   </div>
 
   <!-- Mensaje de éxito -->
   <div class="success-message" *ngIf="successMessage">
-    ✅ {{ successMessage }}
+    <img src="assets/icons/Check.svg" width="16" height="16" alt="" aria-hidden="true" />
+    {{ successMessage }}
   </div>
 
   <!-- Estado de carga -->
@@ -28,7 +30,7 @@
       <div>
         <h1>{{ client.name }}</h1>
         <p class="user-name" *ngIf="client.userName">
-          <span class="user-icon">👤</span> {{ client.userName }}
+          <span class="user-icon"><img src="assets/icons/persona.svg" width="16" height="16" alt="" aria-hidden="true" /></span> {{ client.userName }}
         </p>
         <p class="email" *ngIf="client.email">{{ client.email }}</p>
         <p class="slug" *ngIf="client.slug && client.slug !== client.name">
@@ -71,7 +73,7 @@
 
   <div class="info-grid">
     <div class="info-card">
-      <h3>📋 Información General</h3>
+      <h3><img src="assets/icons/Notas.svg" width="16" height="16" alt="" aria-hidden="true" /> Información General</h3>
       <div class="info-item">
         <span class="label">ID Cliente:</span>
         <span class="value">#{{ client.id }}</span>
@@ -103,7 +105,7 @@
     </div>
 
     <div class="info-card" *ngIf="client.activeSubscription">
-      <h3>💳 Suscripción Activa</h3>
+      <h3><img src="assets/icons/credit-card-multiple (1).svg" width="16" height="16" alt="" aria-hidden="true" /> Suscripción Activa</h3>
       <div class="info-item">
         <span class="label">ID Suscripción:</span>
         <span class="value">#{{ client.activeSubscription.SubscriptionId }}</span>
@@ -131,7 +133,7 @@
     </div>
 
     <div class="info-card" *ngIf="client.metrics">
-      <h3>📊 Métricas Globales</h3>
+      <h3><img src="assets/icons/Metricas.svg" width="16" height="16" alt="" aria-hidden="true" /> Métricas Globales</h3>
       <div class="metrics-grid">
         <div class="metric-item">
           <div class="metric-value">{{ client.metrics.totalPosts }}</div>
@@ -155,7 +157,7 @@
 
   <div class="sections-grid">
     <div class="section-card">
-      <h3>👥 Usuarios del Tenant ({{ client.users.length }})</h3>
+      <h3><img src="assets/icons/Clientes.svg" width="16" height="16" alt="" aria-hidden="true" /> Usuarios del Tenant ({{ client.users.length }})</h3>
       <div class="list-items">
         <div class="list-item" *ngFor="let user of client.users">
           <div class="item-info">
@@ -178,7 +180,7 @@
     </div>
 
     <div class="section-card">
-      <h3>📄 Páginas Conectadas ({{ client.pages?.length || 0 }})</h3>
+      <h3><img src="assets/icons/Pages.svg" width="16" height="16" alt="" aria-hidden="true" /> Páginas Conectadas ({{ client.pages?.length || 0 }})</h3>
       <div class="list-items">
         <div class="list-item" *ngFor="let page of client.pages">
           <div class="item-info">
@@ -196,7 +198,7 @@
     </div>
 
     <div class="section-card">
-      <h3>👥 Grupos Conectados ({{ client.groups?.length || 0 }})</h3>
+      <h3><img src="assets/icons/Clientes.svg" width="16" height="16" alt="" aria-hidden="true" /> Grupos Conectados ({{ client.groups?.length || 0 }})</h3>
       <div class="list-items">
         <div class="list-item" *ngFor="let group of client.groups">
           <div class="item-info">

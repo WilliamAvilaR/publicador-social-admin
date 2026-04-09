@@ -44,12 +44,14 @@
 
   <!-- Mensaje de error -->
   <div class="error-message" *ngIf="errorMessage">
-    ⚠️ {{ errorMessage }}
+    <img src="assets/icons/Errores del Sistema.svg" width="16" height="16" alt="" aria-hidden="true" />
+    {{ errorMessage }}
   </div>
 
   <!-- Mensaje de éxito -->
   <div class="success-message" *ngIf="successMessage">
-    ✅ {{ successMessage }}
+    <img src="assets/icons/Check.svg" width="16" height="16" alt="" aria-hidden="true" />
+    {{ successMessage }}
   </div>
 
   <!-- Estado de carga -->
@@ -135,7 +137,7 @@
                   class="btn-view-details" 
                   (click)="viewPaymentHistory(sub.SubscriptionId)"
                   title="Ver detalles">
-                  👁️
+                  <img src="assets/icons/Ver.svg" width="16" height="16" alt="" aria-hidden="true" />
                 </button>
                 <span class="updating-indicator" *ngIf="updatingStatusId === sub.SubscriptionId">
                   Actualizando...
@@ -155,8 +157,10 @@
   <div class="modal-overlay" *ngIf="showModal" (click)="closeModal()">
     <div class="modal-content" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h2>📋 Detalles de Suscripción</h2>
-        <button class="btn-close" (click)="closeModal()" title="Cerrar">✕</button>
+        <h2><img src="assets/icons/Notas.svg" width="16" height="16" alt="" aria-hidden="true" /> Detalles de Suscripción</h2>
+        <button class="btn-close" (click)="closeModal()" title="Cerrar">
+          <img src="assets/icons/xmark.svg" width="16" height="16" alt="" aria-hidden="true" />
+        </button>
       </div>
 
       <div class="modal-body" *ngIf="isLoadingDetails">
@@ -178,22 +182,26 @@
             class="tab-button" 
             [class.active]="modalActiveTab === 'plan'"
             (click)="setModalTab('plan')">
-            📦 Plan
+            <img src="assets/icons/Planes.svg" width="16" height="16" alt="" aria-hidden="true" />
+            Plan
           </button>
           <button 
             class="tab-button" 
             [class.active]="modalActiveTab === 'limits'"
             (click)="setModalTab('limits')">
-            📊 Límites
+            <img src="assets/icons/Metricas.svg" width="16" height="16" alt="" aria-hidden="true" />
+            Límites
           </button>
         </div>
 
         <!-- Mensajes de error y éxito -->
         <div class="error-message" *ngIf="errorMessage">
-          ⚠️ {{ errorMessage }}
+          <img src="assets/icons/Errores del Sistema.svg" width="16" height="16" alt="" aria-hidden="true" />
+          {{ errorMessage }}
         </div>
         <div class="success-message" *ngIf="successMessage">
-          ✅ {{ successMessage }}
+          <img src="assets/icons/Check.svg" width="16" height="16" alt="" aria-hidden="true" />
+          {{ successMessage }}
         </div>
 
         <!-- Tab: Información -->

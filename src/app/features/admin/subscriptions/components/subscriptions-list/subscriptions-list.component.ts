@@ -1,12 +1,10 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { firstValueFrom } from 'rxjs';
 import { SubscriptionsService } from '../../services/subscriptions.service';
 import { PlansService } from '../../../plans/services/plans.service';
 import { TenantsService } from '../../../clients/services/tenants.service';
 import { Subscription, SubscriptionDetail, GetSubscriptionsParams } from '../../models/subscription.model';
-import { Plan } from '../../../plans/models/plan.model';
 import { TenantLimits, UpdateTenantLimitsRequest } from '../../../clients/models/tenant.model';
 
 // Interfaz local para mostrar planes en la UI
@@ -21,6 +19,12 @@ interface PlanDisplay {
     apiCalls: number | string;
   };
   features: string[];
+}
+
+interface PlanSelectOption {
+  Code: string;
+  Name: string;
+  Price: number | null;
 }
 
 @Component({
@@ -60,7 +64,7 @@ export class SubscriptionsListComponent implements OnInit {
   
   // Datos del modal
   tenantLimits: TenantLimits | null = null;
-  availablePlansForSelect: Plan[] = [];
+  availablePlansForSelect: PlanSelectOption[] = [];
   selectedPlanCode: string = '';
   
   // Formulario de límites
@@ -125,209 +129,51 @@ export class SubscriptionsListComponent implements OnInit {
    */
   loadPlans(): void {
     this.isLoadingPlans = true;
-    this.plansService.getPlans().subscribe({
+    this.plansService.getPublicPlans().subscribe({
       next: (response) => {
         const data: any = response.data || {};
-
-        // Soportar tanto data.Plans (docs) como data.plans (API real)
-        const rawPlans: any[] = data.Plans || data.plans || [];
-
-        // Normalizar a la interfaz Plan (PascalCase) para reutilizar mapPlanToDisplay
-        const normalizedPlans: Plan[] = rawPlans.map((p: any) => ({
-          PlanId: p.PlanId ?? p.planId ?? 0,
-          Code: p.Code ?? p.code,
-          Name: p.Name ?? p.name,
-          Description: p.Description ?? p.description ?? '',
-          IsDefault: p.IsDefault ?? p.isDefault ?? false,
-          IsPaid: p.IsPaid ?? p.isPaid ?? false,
-          IsActive: p.IsActive ?? p.isActive ?? false,
-          Price: p.Price ?? p.price ?? null
-        }));
-
-        const apiPlans = normalizedPlans;
-        
-        if (apiPlans.length === 0) {
-          // Si no hay planes, usar los por defecto
-          this.plans = this.getDefaultPlans();
-          this.isLoadingPlans = false;
-          return;
-        }
-
-        // Verificar si tenemos IDs válidos para cargar detalles
-        const plansWithId = apiPlans.filter(p => p.PlanId && p.PlanId > 0);
-
-        if (plansWithId.length > 0 && plansWithId.length === apiPlans.length) {
-          // Cargar detalles de cada plan para obtener features y limits
-          const planPromises = plansWithId.map(plan => 
-            firstValueFrom(this.plansService.getPlanById(plan.PlanId))
-          );
-
-          Promise.all(planPromises).then(planDetails => {
-            this.plans = planDetails
-              .filter(detail => detail !== undefined)
-              .map(detail => this.mapPlanDetailToDisplay(detail!.data));
-            this.isLoadingPlans = false;
-          }).catch(error => {
-            console.error('Error loading plan details:', error);
-            // Si falla cargar detalles, usar solo la info básica
-            this.plans = apiPlans.map(plan => this.mapPlanToDisplay(plan));
-            this.isLoadingPlans = false;
-          });
-        } else {
-          // Si no hay IDs válidos, usar solo la info básica de la lista
-          this.plans = apiPlans.map(plan => this.mapPlanToDisplay(plan));
-          this.isLoadingPlans = false;
-        }
+        const rawPlans: any[] = data.plans || data.Plans || [];
+        this.plans = rawPlans.map((plan: any) => this.mapPublicPlanToDisplay(plan));
+        this.isLoadingPlans = false;
       },
       error: (error) => {
         console.error('Error loading plans:', error);
-        // Si falla, usar planes por defecto como fallback
-        this.plans = this.getDefaultPlans();
+        this.plans = [];
         this.isLoadingPlans = false;
       }
     });
   }
 
   /**
-   * Mapea un Plan básico de la API al formato de display
+   * Mapea plan público al formato de display de la UI
    */
-  private mapPlanToDisplay(plan: Plan): PlanDisplay {
+  private mapPublicPlanToDisplay(plan: any): PlanDisplay {
+    const rawLimits = plan.limits || {};
+    const rawFeatures = plan.features;
+
+    const toLimitValue = (value: unknown): number | string => {
+      if (value === null || value === undefined || value === -1) return 'Ilimitado';
+      if (typeof value === 'number') return value;
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : 'N/A';
+    };
+
+    const features = Array.isArray(rawFeatures)
+      ? rawFeatures.filter((item: unknown) => typeof item === 'string' && item.trim().length > 0)
+      : [];
+
     return {
-      name: plan.Name,
-      code: plan.Code,
-      price: plan.Price || 0,
+      name: plan.name ?? plan.Name ?? '',
+      code: plan.code ?? plan.Code ?? '',
+      price: plan.price ?? plan.Price ?? 0,
       limits: {
-        pages: 'N/A',
-        users: 'N/A',
-        scheduledPosts: 'N/A',
-        apiCalls: 'N/A'
+        pages: toLimitValue(rawLimits.pages),
+        users: toLimitValue(rawLimits.users),
+        scheduledPosts: toLimitValue(rawLimits.scheduledPosts),
+        apiCalls: toLimitValue(rawLimits.apiCalls)
       },
-      features: []
+      features
     };
-  }
-
-  /**
-   * Mapea un PlanDetail completo al formato de display
-   */
-  private mapPlanDetailToDisplay(planDetail: any): PlanDisplay {
-    // Extraer límites específicos de los limits del plan
-    const limits = this.extractLimitsFromPlan(planDetail.Limits || []);
-    
-    // Generar features como texto descriptivo
-    const features = this.generateFeaturesText(planDetail.Features || []);
-
-    return {
-      name: planDetail.Name,
-      code: planDetail.Code,
-      price: planDetail.Price || 0,
-      limits: limits,
-      features: features
-    };
-  }
-
-  /**
-   * Extrae límites específicos de la lista de límites del plan
-   */
-  private extractLimitsFromPlan(planLimits: any[]): PlanDisplay['limits'] {
-    const limits: PlanDisplay['limits'] = {
-      pages: 'N/A',
-      users: 'N/A',
-      scheduledPosts: 'N/A',
-      apiCalls: 'N/A'
-    };
-
-    planLimits.forEach(limit => {
-      const key = (limit.LimitKey || limit.limitKey || '').toLowerCase();
-      const value = limit.Value !== undefined ? limit.Value : limit.value;
-
-      if (key.includes('page') || key.includes('pagina')) {
-        limits.pages = value === null ? 'Ilimitado' : value;
-      } else if (key.includes('user')) {
-        limits.users = value === null ? 'Ilimitado' : value;
-      } else if (key.includes('post')) {
-        limits.scheduledPosts = value === null ? 'Ilimitado' : value;
-      } else if (key.includes('api')) {
-        limits.apiCalls = value === null ? 'Ilimitado' : value;
-      }
-    });
-
-    return limits;
-  }
-
-  /**
-   * Genera texto descriptivo de las features
-   */
-  private generateFeaturesText(features: any[]): string[] {
-    if (!features || features.length === 0) {
-      return [];
-    }
-
-    // Contar features habilitadas por categoría
-    const enabledFeatures = features.filter(f => 
-      f.IsEnabled !== undefined ? f.IsEnabled : f.isEnabled
-    );
-    const moduleCount = enabledFeatures.filter(f => {
-      const key = f.FeatureKey || f.featureKey || '';
-      return key.startsWith('module.');
-    }).length;
-    const networkCount = enabledFeatures.filter(f => {
-      const key = f.FeatureKey || f.featureKey || '';
-      return key.startsWith('network.');
-    }).length;
-
-    const featureTexts: string[] = [];
-    if (moduleCount > 0) {
-      featureTexts.push(`${moduleCount} módulo${moduleCount > 1 ? 's' : ''} habilitado${moduleCount > 1 ? 's' : ''}`);
-    }
-    if (networkCount > 0) {
-      featureTexts.push(`${networkCount} red${networkCount > 1 ? 'es' : ''} social${networkCount > 1 ? 'es' : ''}`);
-    }
-
-    return featureTexts.length > 0 ? featureTexts : ['Sin features configuradas'];
-  }
-
-  /**
-   * Planes por defecto como fallback si la API falla
-   */
-  private getDefaultPlans(): PlanDisplay[] {
-    return [
-      {
-        name: 'Free',
-        code: 'free',
-        price: 0,
-        limits: {
-          pages: 1,
-          users: 1,
-          scheduledPosts: 10,
-          apiCalls: 1000
-        },
-        features: ['1 Página', '1 Usuario', '10 Posts programados', '1,000 llamadas API/mes']
-      },
-      {
-        name: 'Pro',
-        code: 'pro',
-        price: 29,
-        limits: {
-          pages: 5,
-          users: 3,
-          scheduledPosts: 100,
-          apiCalls: 10000
-        },
-        features: ['5 Páginas', '3 Usuarios', '100 Posts programados', '10,000 llamadas API/mes']
-      },
-      {
-        name: 'Enterprise',
-        code: 'enterprise',
-        price: 99,
-        limits: {
-          pages: 'Ilimitado',
-          users: 'Ilimitado',
-          scheduledPosts: 'Ilimitado',
-          apiCalls: 'Ilimitado'
-        },
-        features: ['Páginas ilimitadas', 'Usuarios ilimitados', 'Posts ilimitados', 'API ilimitada']
-      }
-    ];
   }
 
   /**
@@ -507,20 +353,15 @@ export class SubscriptionsListComponent implements OnInit {
    * Carga los planes disponibles para el select
    */
   loadAvailablePlans(): void {
-    this.plansService.getPlans().subscribe({
+    this.plansService.getPublicPlans().subscribe({
       next: (response: any) => {
         const data: any = response.data || {};
-        const rawPlans: any[] = data.Plans || data.plans || [];
+        const rawPlans: any[] = data.plans || data.Plans || [];
         
         this.availablePlansForSelect = rawPlans.map((p: any) => ({
-          PlanId: p.PlanId ?? p.planId ?? 0,
-          Code: p.Code ?? p.code,
-          Name: p.Name ?? p.name,
-          Description: p.Description ?? p.description ?? '',
-          IsDefault: p.IsDefault ?? p.isDefault ?? false,
-          IsPaid: p.IsPaid ?? p.isPaid ?? false,
-          IsActive: p.IsActive ?? p.isActive ?? false,
-          Price: p.Price ?? p.price ?? null
+          Code: p.code ?? p.Code ?? '',
+          Name: p.name ?? p.Name ?? '',
+          Price: p.price ?? p.Price ?? null
         }));
       },
       error: (error) => {

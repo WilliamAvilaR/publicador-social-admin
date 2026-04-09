@@ -81,6 +81,38 @@ export interface PlansListResponse {
   success: boolean;
 }
 
+// Plan público (GET /api/public/plans)
+export interface PublicPlan {
+  code: string;
+  name: string;
+  description: string;
+  isDefault: boolean;
+  isPaid: boolean;
+  price: number | null;
+  currency?: string;
+  billingPeriod?: string;
+  displayOrder?: number;
+  limits?: {
+    pages?: number | null;
+    users?: number | null;
+    scheduledPosts?: number | null;
+    apiCalls?: number | null;
+  };
+  features?: string[];
+}
+
+export interface PublicPlansData {
+  plans: PublicPlan[];
+  count: number;
+}
+
+export interface PublicPlansResponse {
+  data: PublicPlansData;
+  success?: boolean;
+  requiresReauth?: boolean;
+  meta?: unknown;
+}
+
 // Respuesta de un plan detallado
 export interface PlanDetailResponse {
   data: PlanDetail;

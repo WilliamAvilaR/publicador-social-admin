@@ -4,6 +4,7 @@ import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import {
   PlansListResponse,
+  PublicPlansResponse,
   PlanDetailResponse,
   PlanOperationResponse,
   CreatePlanRequest,
@@ -19,6 +20,7 @@ import {
 })
 export class PlansService {
   private readonly apiUrl = '/api/admin/plans';
+  private readonly publicApiUrl = '/api/public/plans';
 
   constructor(private http: HttpClient) {}
 
@@ -28,6 +30,15 @@ export class PlansService {
    */
   getPlans(): Observable<PlansListResponse> {
     return this.http.get<PlansListResponse>(this.apiUrl).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  /**
+   * Obtiene catálogo público de planes disponibles (solo activos)
+   */
+  getPublicPlans(): Observable<PublicPlansResponse> {
+    return this.http.get<PublicPlansResponse>(this.publicApiUrl).pipe(
       catchError(this.handleError)
     );
   }

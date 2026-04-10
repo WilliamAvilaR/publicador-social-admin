@@ -1,104 +1,169 @@
 <div class="plans-container">
-  <div class="page-actions">
+  <!-- Administración: acciones de creación -->
+  <div class="page-actions" *ngIf="activeSubTab === 'admin'">
     <a routerLink="/dashboard/planes/nuevo" class="btn-create">
       <img src="assets/icons/Crear.svg" width="16" height="16" alt="" aria-hidden="true" />
       Crear Nuevo Plan
     </a>
   </div>
 
-  <!-- Mensaje de error -->
-  <div class="error-message" *ngIf="errorMessage">
-    <img src="assets/icons/Errores del Sistema.svg" width="16" height="16" alt="" aria-hidden="true" />
-    {{ errorMessage }}
-  </div>
+  <!-- === Administración (admin API) === -->
+  <section
+    class="plans-section admin-plans-section"
+    *ngIf="activeSubTab === 'admin'"
+    aria-labelledby="admin-plans-heading"
+  >
+    <h2 id="admin-plans-heading">Administración de planes</h2>
+    <p class="section-hint">
+      Fuente: <code>GET /api/admin/plans</code> — incluye todos los planes (activos e inactivos) para gestión.
+    </p>
 
-  <!-- Estado de carga -->
-  <div class="loading-state" *ngIf="isLoading">
-    <p>Cargando planes...</p>
-  </div>
-
-  <!-- Contenido principal -->
-  <div *ngIf="!isLoading && !errorMessage">
-    <div class="table-container">
-      <table class="plans-table">
-        <thead>
-          <tr>
-            <th>Código</th>
-            <th>Nombre</th>
-            <th>Descripción</th>
-            <th>Precio</th>
-            <th>Estado</th>
-            <th>Tipo</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let plan of plans">
-            <td>
-              <span class="code-badge">{{ plan.Code }}</span>
-            </td>
-            <td>
-              <strong>{{ plan.Name }}</strong>
-            </td>
-            <td>
-              <span class="description">{{ plan.Description || '-' }}</span>
-            </td>
-            <td>
-              <span class="price" [ngClass]="{'price-free': plan.Price === null}">
-                {{ formatPrice(plan.Price) }}
-              </span>
-            </td>
-            <td>
-              <span class="status-badge" [ngClass]="getPlanStatusClass(plan)">
-                {{ getPlanStatusText(plan) }}
-              </span>
-            </td>
-            <td>
-              <span class="type-badge" [ngClass]="{'type-paid': plan.IsPaid, 'type-free': !plan.IsPaid}">
-                {{ plan.IsPaid ? 'De Pago' : 'Gratuito' }}
-              </span>
-            </td>
-            <td>
-              <div class="actions">
-                <!-- Editamos por código, usando el nuevo endpoint GET /api/admin/plans/by-code/{code} -->
-                <a [routerLink]="['/dashboard/planes', plan.Code]" class="btn-edit">
-                  <img src="assets/icons/Editar.svg" width="16" height="16" alt="" aria-hidden="true" />
-                  Editar
-                </a>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-
-      <!-- Estado vacío -->
-      <div class="empty-state" *ngIf="plans.length === 0">
-        <p>No hay planes disponibles. Crea tu primer plan para comenzar.</p>
-        <a routerLink="/dashboard/planes/nuevo" class="btn-create">
-          <img src="assets/icons/Crear.svg" width="16" height="16" alt="" aria-hidden="true" />
-          Crear Primer Plan
-        </a>
-      </div>
+    <div class="error-message" *ngIf="errorMessage">
+      <img src="assets/icons/Errores del Sistema.svg" width="16" height="16" alt="" aria-hidden="true" />
+      {{ errorMessage }}
     </div>
 
-    <!-- Resumen de estadísticas -->
-    <div class="stats-summary">
-      <div class="stat-card">
-        <div class="stat-value">{{ totalPlans }}</div>
-        <div class="stat-label">Total Planes</div>
+    <div class="loading-state" *ngIf="isLoadingAdmin">
+      <p>Cargando planes (admin)...</p>
+    </div>
+
+    <div *ngIf="!isLoadingAdmin && !errorMessage">
+      <div class="table-container">
+        <table class="plans-table">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Nombre</th>
+              <th>Descripción</th>
+              <th>Precio</th>
+              <th>Estado</th>
+              <th>Tipo</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let plan of plans">
+              <td>
+                <span class="code-badge">{{ plan.Code }}</span>
+              </td>
+              <td>
+                <strong>{{ plan.Name }}</strong>
+              </td>
+              <td>
+                <span class="description">{{ plan.Description || '-' }}</span>
+              </td>
+              <td>
+                <span class="price" [ngClass]="{'price-free': plan.Price === null}">
+                  {{ formatPrice(plan.Price) }}
+                </span>
+              </td>
+              <td>
+                <span class="status-badge" [ngClass]="getPlanStatusClass(plan)">
+                  {{ getPlanStatusText(plan) }}
+                </span>
+              </td>
+              <td>
+                <span class="type-badge" [ngClass]="{'type-paid': plan.IsPaid, 'type-free': !plan.IsPaid}">
+                  {{ plan.IsPaid ? 'De Pago' : 'Gratuito' }}
+                </span>
+              </td>
+              <td>
+                <div class="actions">
+                  <a [routerLink]="['/dashboard/planes', plan.Code]" class="btn-edit">
+                    <img src="assets/icons/Editar.svg" width="16" height="16" alt="" aria-hidden="true" />
+                    Editar
+                  </a>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="empty-state" *ngIf="plans.length === 0">
+          <p>No hay planes disponibles. Crea tu primer plan para comenzar.</p>
+          <a routerLink="/dashboard/planes/nuevo" class="btn-create">
+            <img src="assets/icons/Crear.svg" width="16" height="16" alt="" aria-hidden="true" />
+            Crear Primer Plan
+          </a>
+        </div>
       </div>
-      <div class="stat-card">
-        <div class="stat-value">{{ activePlans }}</div>
-        <div class="stat-label">Activos</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value">{{ paidPlans }}</div>
-        <div class="stat-label">De Pago</div>
-      </div>
-      <div class="stat-card" *ngIf="defaultPlan">
-        <div class="stat-value">{{ defaultPlan.Code }}</div>
-        <div class="stat-label">Plan por Defecto</div>
+
+      <div class="stats-summary">
+        <div class="stat-card">
+          <div class="stat-value">{{ totalPlans }}</div>
+          <div class="stat-label">Total Planes</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">{{ activePlans }}</div>
+          <div class="stat-label">Activos</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">{{ paidPlans }}</div>
+          <div class="stat-label">De Pago</div>
+        </div>
+        <div class="stat-card" *ngIf="defaultPlan">
+          <div class="stat-value">{{ defaultPlan.Code }}</div>
+          <div class="stat-label">Plan por Defecto</div>
+        </div>
       </div>
     </div>
-  </div>
+  </section>
+
+  <!-- === Catálogo público === -->
+  <section
+    class="plans-section public-plans-section"
+    *ngIf="activeSubTab === 'public'"
+    aria-labelledby="public-plans-heading"
+  >
+    <h2 id="public-plans-heading">Catálogo público</h2>
+
+    <div class="error-message" *ngIf="publicErrorMessage">
+      <img src="assets/icons/Errores del Sistema.svg" width="16" height="16" alt="" aria-hidden="true" />
+      {{ publicErrorMessage }}
+    </div>
+
+    <div class="loading-state" *ngIf="isLoadingPublic">
+      <p>Cargando catálogo público...</p>
+    </div>
+
+    <div *ngIf="!isLoadingPublic && !publicErrorMessage">
+      <div class="plans-grid" *ngIf="publicPlans.length > 0">
+        <div class="plan-card" *ngFor="let p of publicPlans">
+          <div class="plan-header">
+            <h3>{{ p.name }}</h3>
+            <div class="plan-price">
+              <span class="currency">$</span>
+              <span class="amount">{{ getPublicCardAmount(p) }}</span>
+              <span class="period" *ngIf="showPublicPricePeriod(p)">{{ getPublicPricePeriodLabel(p) }}</span>
+            </div>
+          </div>
+          <div class="plan-limits">
+            <div class="limit-item">
+              <span class="limit-label">Páginas:</span>
+              <span class="limit-value">{{ getPublicLimitForCard(p, 'pages') }}</span>
+            </div>
+            <div class="limit-item">
+              <span class="limit-label">Usuarios:</span>
+              <span class="limit-value">{{ getPublicLimitForCard(p, 'users') }}</span>
+            </div>
+            <div class="limit-item">
+              <span class="limit-label">Posts Programados:</span>
+              <span class="limit-value">{{ getPublicLimitForCard(p, 'scheduledPosts') }}</span>
+            </div>
+            <div class="limit-item">
+              <span class="limit-label">Límite API:</span>
+              <span class="limit-value">{{ getPublicLimitForCard(p, 'apiCalls') }}</span>
+            </div>
+          </div>
+          <div class="plan-features" *ngIf="p.features && p.features.length > 0">
+            <div class="feature-item" *ngFor="let feature of p.features">{{ feature }}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="empty-state subtle" *ngIf="publicPlans.length === 0">
+        <p>No hay planes en el catálogo público.</p>
+      </div>
+    </div>
+  </section>
 </div>

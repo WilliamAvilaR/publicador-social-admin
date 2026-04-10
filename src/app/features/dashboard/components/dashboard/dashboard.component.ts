@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule, Router, NavigationEnd } from '@angular/router';
+import { RouterModule, Router, NavigationEnd, IsActiveMatchOptions } from '@angular/router';
 import { filter, Subscription } from 'rxjs';
 import { AuthService } from '../../../../core/services/auth.service';
 import { AdminService } from '../../../admin/admin/services/admin.service';
@@ -19,6 +19,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
   errorMessage = '';
   currentPageTitle = 'Inicio';
   supportMenuOpen = false;
+  plansMenuOpen = false;
+  /** Misma ruta `/dashboard/planes` con distinto `subtab`: marcar solo el ítem activo. */
+  readonly plansSubmenuMatchOptions: IsActiveMatchOptions = {
+    paths: 'exact',
+    queryParams: 'exact',
+    fragment: 'ignored',
+    matrixParams: 'ignored'
+  };
   private routerSubscription?: Subscription;
 
   // Mapeo de rutas a títulos
@@ -59,9 +67,21 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   updatePageTitle(): void {
-    const url = this.router.url.split('?')[0]; // Remover query params
+    const fullUrl = this.router.url;
+    const url = fullUrl.split('?')[0];
+    const queryString = fullUrl.includes('?') ? fullUrl.split('?')[1] : '';
+    const params = new URLSearchParams(queryString);
+
     this.supportMenuOpen = url.startsWith('/dashboard/soporte');
-    
+    this.plansMenuOpen = url.startsWith('/dashboard/planes');
+
+    if (url === '/dashboard/planes') {
+      const subtab = params.get('subtab');
+      this.currentPageTitle =
+        subtab === 'public' ? 'Catálogo público de planes' : 'Administración de planes';
+      return;
+    }
+
     // Buscar coincidencia exacta primero
     if (this.routeTitleMap[url]) {
       this.currentPageTitle = this.routeTitleMap[url];
@@ -133,5 +153,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   toggleSupportMenu(): void {
     this.supportMenuOpen = !this.supportMenuOpen;
+  }
+
+  togglePlansMenu(): void {
+    this.plansMenuOpen = !this.plansMenuOpen;
   }
 }

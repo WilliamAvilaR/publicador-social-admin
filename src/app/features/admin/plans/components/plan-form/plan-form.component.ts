@@ -311,7 +311,7 @@ export class PlanFormComponent implements OnInit {
       next: (response) => {
         this.successMessage = response.data.message || 'Plan creado correctamente';
         setTimeout(() => {
-          this.router.navigate(['/dashboard/planes']);
+          this.router.navigate(['/dashboard/planes'], { queryParams: { subtab: 'admin' } });
         }, 1500);
       },
       error: (error) => {
@@ -362,7 +362,7 @@ export class PlanFormComponent implements OnInit {
                 this.successMessage = response.data.message || 'Plan actualizado correctamente';
                 this.isSaving = false;
                 setTimeout(() => {
-                  this.router.navigate(['/dashboard/planes']);
+                  this.router.navigate(['/dashboard/planes'], { queryParams: { subtab: 'admin' } });
                 }, 1500);
               },
               error: (error) => {
@@ -521,6 +521,6 @@ export class PlanFormComponent implements OnInit {
   }
 
   cancel(): void {
-    this.router.navigate(['/dashboard/planes']);
+    this.router.navigate(['/dashboard/planes'], { queryParams: { subtab: 'admin' } });
   }
 }

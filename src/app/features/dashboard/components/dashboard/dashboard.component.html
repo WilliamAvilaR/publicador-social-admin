@@ -1,75 +1,118 @@
 <div class="dashboard-container">
-  <header class="dashboard-header">
-    <div class="header-title-section">
-      <span class="app-name">PublicadorSocial Admin</span>
-      <span class="page-title">{{ currentPageTitle }}</span>
-    </div>
-    <div class="user-info">
-      <div class="user-details" *ngIf="user">
-        <span class="user-name">{{ user.FullName || user.Email }}</span>
-        <span class="user-roles" *ngIf="user.InternalRoles && user.InternalRoles.length > 0">
-          {{ user.InternalRoles.join(', ') }}
+  <aside class="dashboard-sidebar">
+    <a routerLink="/dashboard" class="sidebar-brand">
+      <img
+        class="sidebar-brand-logo"
+        src="assets/Images/logoSocial.png"
+        alt="Social Automate"
+      />
+      <div class="sidebar-brand-text">
+        <span class="sidebar-brand-name">
+          Social <span class="sidebar-brand-accent">Automate</span>
         </span>
+        <span class="sidebar-brand-tagline">Admin</span>
       </div>
-      <span *ngIf="isLoading">Cargando...</span>
-      <button (click)="logout()" class="btn-logout">Cerrar Sesión</button>
-    </div>
-  </header>
-
-  <div class="dashboard-body">
-    <aside class="dashboard-sidebar">
-      <nav class="dashboard-nav">
-        <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
-          <img class="nav-icon" src="assets/icons/Inicio.svg" width="24" height="24" alt="" />
-          <span class="nav-text">Inicio</span>
-        </a>
-        <a routerLink="/dashboard/clientes" routerLinkActive="active">
-          <img class="nav-icon" src="assets/icons/Clientes.svg" width="24" height="24" alt="" />
-          <span class="nav-text">Gestión de Clientes</span>
-        </a>
-        <a routerLink="/dashboard/suscripciones" routerLinkActive="active">
-          <img class="nav-icon" src="assets/icons/Suscripciones.svg" width="24" height="24" alt="" />
-          <span class="nav-text">Suscripciones</span>
-        </a>
-        <a routerLink="/dashboard/planes" routerLinkActive="active">
+    </a>
+    <nav class="dashboard-nav">
+      <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+        <img class="nav-icon" src="assets/icons/Inicio.svg" width="24" height="24" alt="" />
+        <span class="nav-text">Inicio</span>
+      </a>
+      <a routerLink="/dashboard/clientes" routerLinkActive="active">
+        <img class="nav-icon" src="assets/icons/Clientes.svg" width="24" height="24" alt="" />
+        <span class="nav-text">Gestión de Clientes</span>
+      </a>
+      <a routerLink="/dashboard/suscripciones" routerLinkActive="active">
+        <img class="nav-icon" src="assets/icons/Suscripciones.svg" width="24" height="24" alt="" />
+        <span class="nav-text">Suscripciones</span>
+      </a>
+      <div class="nav-accordion" [class.nav-accordion--open]="plansMenuOpen">
+        <button
+          type="button"
+          class="nav-accordion-toggle"
+          [class.active]="plansMenuOpen"
+          (click)="togglePlansMenu()"
+        >
           <img class="nav-icon" src="assets/icons/Planes.svg" width="24" height="24" alt="" />
           <span class="nav-text">Gestión de Planes</span>
-        </a>
-        <div class="nav-accordion" [class.nav-accordion--open]="supportMenuOpen">
-          <button
-            type="button"
-            class="nav-accordion-toggle"
-            [class.active]="supportMenuOpen"
-            (click)="toggleSupportMenu()"
+          <img
+            class="nav-accordion-arrow"
+            [src]="plansMenuOpen ? 'assets/icons/Flecha%20derecha.svg' : 'assets/icons/Flecha%20abajo.svg'"
+            width="16"
+            height="16"
+            alt=""
+            aria-hidden="true"
+          />
+        </button>
+        <div class="nav-submenu" *ngIf="plansMenuOpen">
+          <a
+            routerLink="/dashboard/planes"
+            [queryParams]="{ subtab: 'admin' }"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="plansSubmenuMatchOptions"
           >
-            <img class="nav-icon" src="assets/icons/Soporte.svg" width="24" height="24" alt="" />
-            <span class="nav-text">Soporte Técnico</span>
-            <img
-              class="nav-accordion-arrow"
-              [src]="supportMenuOpen ? 'assets/icons/Flecha%20derecha.svg' : 'assets/icons/Flecha%20abajo.svg'"
-              width="16"
-              height="16"
-              alt=""
-              aria-hidden="true"
-            />
-          </button>
-          <div class="nav-submenu" *ngIf="supportMenuOpen">
-            <a routerLink="/dashboard/soporte" [queryParams]="{ subtab: 'requests' }" routerLinkActive="active">
-              <img class="nav-icon nav-icon--sub" src="assets/icons/Requests%20HTTP.svg" width="20" height="20" alt="" />
-              <span class="nav-text">Requests HTTP</span>
-            </a>
-            <a routerLink="/dashboard/soporte" [queryParams]="{ subtab: 'errors' }" routerLinkActive="active">
-              <img class="nav-icon nav-icon--sub" src="assets/icons/Errores%20del%20Sistema.svg" width="20" height="20" alt="" />
-              <span class="nav-text">Errores del Sistema</span>
-            </a>
-          </div>
+            <span class="nav-text">Administración</span>
+          </a>
+          <a
+            routerLink="/dashboard/planes"
+            [queryParams]="{ subtab: 'public' }"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="plansSubmenuMatchOptions"
+          >
+            <span class="nav-text">Catálogo público</span>
+          </a>
         </div>
-        <a routerLink="/dashboard/metricas" routerLinkActive="active">
-          <img class="nav-icon" src="assets/icons/Metricas.svg" width="24" height="24" alt="" />
-          <span class="nav-text">Métricas Globales</span>
-        </a>
-      </nav>
-    </aside>
+      </div>
+      <div class="nav-accordion" [class.nav-accordion--open]="supportMenuOpen">
+        <button
+          type="button"
+          class="nav-accordion-toggle"
+          [class.active]="supportMenuOpen"
+          (click)="toggleSupportMenu()"
+        >
+          <img class="nav-icon" src="assets/icons/Soporte.svg" width="24" height="24" alt="" />
+          <span class="nav-text">Soporte Técnico</span>
+          <img
+            class="nav-accordion-arrow"
+            [src]="supportMenuOpen ? 'assets/icons/Flecha%20derecha.svg' : 'assets/icons/Flecha%20abajo.svg'"
+            width="16"
+            height="16"
+            alt=""
+            aria-hidden="true"
+          />
+        </button>
+        <div class="nav-submenu" *ngIf="supportMenuOpen">
+          <a routerLink="/dashboard/soporte" [queryParams]="{ subtab: 'requests' }" routerLinkActive="active">
+            <span class="nav-text">Requests HTTP</span>
+          </a>
+          <a routerLink="/dashboard/soporte" [queryParams]="{ subtab: 'errors' }" routerLinkActive="active">
+            <span class="nav-text">Errores del Sistema</span>
+          </a>
+        </div>
+      </div>
+      <a routerLink="/dashboard/metricas" routerLinkActive="active">
+        <img class="nav-icon" src="assets/icons/Metricas.svg" width="24" height="24" alt="" />
+        <span class="nav-text">Métricas Globales</span>
+      </a>
+    </nav>
+  </aside>
+
+  <div class="dashboard-main">
+    <header class="dashboard-header">
+      <div class="header-title-section">
+        <span class="page-title">{{ currentPageTitle }}</span>
+      </div>
+      <div class="user-info">
+        <div class="user-details" *ngIf="user">
+          <span class="user-name">{{ user.FullName || user.Email }}</span>
+          <span class="user-roles" *ngIf="user.InternalRoles && user.InternalRoles.length > 0">
+            {{ user.InternalRoles.join(', ') }}
+          </span>
+        </div>
+        <span *ngIf="isLoading">Cargando...</span>
+        <button (click)="logout()" class="btn-logout">Cerrar Sesión</button>
+      </div>
+    </header>
 
     <main class="dashboard-content">
       <router-outlet></router-outlet>

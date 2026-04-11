@@ -1,6 +1,6 @@
 /* You can add global styles to this file, and also import other style files */
-@import 'ag-grid-community/styles/ag-grid.css';
-@import 'ag-grid-community/styles/ag-theme-quartz.css';
+/* AG Grid v33+: estilo vía Theming API (por defecto Quartz). No importar ag-grid.css ni
+   ag-theme-*.css aquí — provoca el error #239 si se mezcla con el tema por API. */
 
 * {
   margin: 0;

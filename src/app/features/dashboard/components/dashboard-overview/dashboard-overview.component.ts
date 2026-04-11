@@ -6,7 +6,6 @@ import { catchError } from 'rxjs/operators';
 import { AdminService } from '../../../admin/admin/services/admin.service';
 import { AdminInfo, SensitiveData } from '../../../admin/admin/models/admin.model';
 import { TenantsService } from '../../../admin/clients/services/tenants.service';
-import { SubscriptionsService } from '../../../admin/subscriptions/services/subscriptions.service';
 import { PlansService } from '../../../admin/plans/services/plans.service';
 import { SupportService } from '../../../admin/support/services/support.service';
 import { MetricsService } from '../../../admin/metrics/services/metrics.service';
@@ -17,19 +16,15 @@ import {
   AdminPlanDistributionItem
 } from '../../../admin/metrics/models/metrics.model';
 import { ApiErrorLog } from '../../../admin/support/models/support.model';
+import { NgxEchartsDirective } from 'ngx-echarts';
+import type { EChartsCoreOption } from 'echarts/core';
 
 export type ChartPeriod = 'week' | 'month' | 'year';
-
-export interface ChartBarVm {
-  label: string;
-  barPct: number;
-  linePct: number;
-}
 
 @Component({
   selector: 'app-dashboard-overview',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, NgxEchartsDirective],
   templateUrl: './dashboard-overview.component.html',
   styleUrl: './dashboard-overview.component.scss'
 })
@@ -70,12 +65,14 @@ export class DashboardOverviewComponent implements OnInit {
   }> = [];
 
   monthlyUsageItems: AdminMonthlyUsageItem[] = [];
-  chartBars: ChartBarVm[] = [];
+  /** True si hay serie para el gráfico ECharts (uso mensual) */
+  hasMetricsChartData = false;
+  /** Opciones del gráfico ECharts (barras + línea) */
+  metricsChartOptions: EChartsCoreOption = {};
 
   constructor(
     private adminService: AdminService,
     private tenantsService: TenantsService,
-    private subscriptionsService: SubscriptionsService,
     private plansService: PlansService,
     private supportService: SupportService,
     private metricsService: MetricsService
@@ -159,11 +156,8 @@ export class DashboardOverviewComponent implements OnInit {
       tenantsNewMonth: this.tenantsService.getTenants({ page: 1, pageSize: 1, createdFrom }).pipe(
         catchError(() => of(null))
       ),
-      subscriptions: this.subscriptionsService.getSubscriptions({ isActive: true }).pipe(
-        catchError(() => of(null))
-      ),
       plans: this.plansService.getPlans().pipe(catchError(() => of(null))),
-      errorsList: this.supportService.getErrors({ page: 1, pageSize: 5 }).pipe(
+      errorsList: this.supportService.getErrors({ page: 1, pageSize: 3 }).pipe(
         catchError(() => of(null))
       ),
       errorsOpen: this.supportService.getErrors({ page: 1, pageSize: 1, isHandled: false }).pipe(
@@ -179,11 +173,6 @@ export class DashboardOverviewComponent implements OnInit {
         const tn: any = res.tenantsNewMonth?.data;
         this.newClientsThisMonth = tn?.Total ?? tn?.total ?? tn?.count ?? 0;
 
-        const subs: any = res.subscriptions?.data;
-        const subList = subs?.Subscriptions ?? subs?.subscriptions ?? [];
-        this.activeSubscriptions =
-          subs?.Count ?? subs?.count ?? (Array.isArray(subList) ? subList.length : 0);
-
         const pl: any = res.plans?.data;
         const plansArr = pl?.Plans ?? pl?.plans ?? [];
         this.plansAvailable = pl?.Count ?? pl?.count ?? (Array.isArray(plansArr) ? plansArr.length : 0);
@@ -196,12 +185,17 @@ export class DashboardOverviewComponent implements OnInit {
           this.overviewTrends = res.overview.data.trends;
         }
 
-        if (res.distribution?.data?.plans?.length) {
-          this.planBuckets = this.bucketPlanDistribution(res.distribution.data.plans);
+        if (res.distribution?.data) {
+          this.activeSubscriptions = res.distribution.data.total ?? 0;
+          if (res.distribution.data.plans?.length) {
+            this.planBuckets = this.bucketPlanDistribution(res.distribution.data.plans);
+          }
+        } else {
+          this.activeSubscriptions = 0;
         }
 
         const errs = res.errorsList?.data?.errors ?? [];
-        this.recentIssues = (errs as ApiErrorLog[]).slice(0, 5).map((e) => ({
+        this.recentIssues = (errs as ApiErrorLog[]).slice(0, 3).map((e) => ({
           id: e.id,
           title: e.tenantName?.trim() || 'Sistema',
           subtitle: this.truncate(e.exceptionMessage || e.exceptionType || 'Error registrado', 52),
@@ -229,7 +223,8 @@ export class DashboardOverviewComponent implements OnInit {
       },
       error: () => {
         this.monthlyUsageItems = [];
-        this.chartBars = [];
+        this.hasMetricsChartData = false;
+        this.metricsChartOptions = {};
         this.isLoadingChart = false;
       }
     });
@@ -238,7 +233,8 @@ export class DashboardOverviewComponent implements OnInit {
   private rebuildChartBars(): void {
     const items = [...this.monthlyUsageItems].filter((i) => i.month);
     if (!items.length) {
-      this.chartBars = [];
+      this.hasMetricsChartData = false;
+      this.metricsChartOptions = {};
       return;
     }
 
@@ -259,14 +255,91 @@ export class DashboardOverviewComponent implements OnInit {
       ];
     }
 
-    const maxBar = Math.max(...slice.map((i) => i.users), 1);
-    const maxLine = Math.max(...slice.map((i) => i.posts), 1);
+    this.hasMetricsChartData = slice.length > 0;
+    this.metricsChartOptions = this.buildMetricsChartOption(slice);
+  }
 
-    this.chartBars = slice.map((i) => ({
-      label: this.formatChartLabel(i.month, this.chartPeriod),
-      barPct: (i.users / maxBar) * 100,
-      linePct: (i.posts / maxLine) * 100
-    }));
+  private buildMetricsChartOption(slice: AdminMonthlyUsageItem[]): EChartsCoreOption {
+    const labels = slice.map((i) => this.formatChartLabel(i.month, this.chartPeriod));
+    const users = slice.map((i) => i.users ?? 0);
+    const posts = slice.map((i) => i.posts ?? 0);
+
+    return {
+      textStyle: { fontFamily: 'inherit' },
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: { type: 'cross' }
+      },
+      legend: {
+        data: ['Usuarios', 'Publicaciones'],
+        bottom: 0,
+        itemGap: 16,
+        textStyle: { fontSize: 11, color: '#64748b' }
+      },
+      grid: {
+        left: '2%',
+        right: '3%',
+        bottom: 40,
+        top: 12,
+        containLabel: true
+      },
+      xAxis: {
+        type: 'category',
+        data: labels,
+        axisTick: { alignWithLabel: true },
+        axisLabel: { fontSize: 11, color: '#64748b' }
+      },
+      yAxis: [
+        {
+          type: 'value',
+          name: 'Usuarios',
+          position: 'left',
+          axisLabel: { fontSize: 11, color: '#64748b' },
+          splitLine: { lineStyle: { color: 'rgba(148, 163, 184, 0.25)' } }
+        },
+        {
+          type: 'value',
+          name: 'Publicaciones',
+          position: 'right',
+          axisLabel: { fontSize: 11, color: '#64748b' },
+          splitLine: { show: false }
+        }
+      ],
+      series: [
+        {
+          name: 'Usuarios',
+          type: 'bar',
+          data: users,
+          yAxisIndex: 0,
+          barMaxWidth: 36,
+          itemStyle: {
+            borderRadius: [10, 10, 4, 4],
+            color: {
+              type: 'linear',
+              x: 0,
+              y: 0,
+              x2: 0,
+              y2: 1,
+              colorStops: [
+                { offset: 0, color: '#f472b6' },
+                { offset: 1, color: '#a78bfa' }
+              ]
+            }
+          }
+        },
+        {
+          name: 'Publicaciones',
+          type: 'line',
+          data: posts,
+          yAxisIndex: 1,
+          smooth: true,
+          symbol: 'circle',
+          symbolSize: 6,
+          lineStyle: { color: '#7c3aed', width: 2 },
+          itemStyle: { color: '#7c3aed' }
+        }
+      ]
+    };
   }
 
   private formatChartLabel(month: string, period: ChartPeriod): string {
@@ -350,18 +423,4 @@ export class DashboardOverviewComponent implements OnInit {
     return this.isPlatformOwner() || this.isPlatformSupport();
   }
 
-  linePoints(): string {
-    if (!this.chartBars.length) return '';
-    const n = this.chartBars.length;
-    const w = 100;
-    const pad = 8;
-    const inner = w - pad * 2;
-    return this.chartBars
-      .map((b, i) => {
-        const x = pad + (inner * i) / Math.max(n - 1, 1);
-        const y = 100 - b.linePct * 0.85 - 8;
-        return `${x},${y}`;
-      })
-      .join(' ');
-  }
 }

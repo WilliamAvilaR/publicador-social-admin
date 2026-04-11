@@ -33,7 +33,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private routeTitleMap: { [key: string]: string } = {
     '/dashboard': 'Inicio',
     '/dashboard/clientes': 'Gestión de Clientes',
-    '/dashboard/suscripciones': 'Gestión de Suscripciones',
     '/dashboard/planes': 'Gestión de Planes',
     '/dashboard/planes/nuevo': 'Crear Nuevo Plan',
     '/dashboard/soporte': 'Soporte Técnico',

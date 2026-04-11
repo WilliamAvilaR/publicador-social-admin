@@ -1,12 +1,14 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { NgxEchartsDirective } from 'ngx-echarts';
+import type { EChartsCoreOption } from 'echarts/core';
 import { MetricsService } from '../../services/metrics.service';
 import { AdminOverviewTrends } from '../../models/metrics.model';
 
 @Component({
   selector: 'app-business-metrics',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, NgxEchartsDirective],
   templateUrl: './business-metrics.component.html',
   styleUrl: './business-metrics.component.scss'
 })
@@ -42,6 +44,11 @@ export class BusinessMetricsComponent implements OnInit {
     { plan: 'Enterprise', count: 50, percentage: 4 }
   ];
 
+  /** ECharts: barras horizontales (usuarios por plan) */
+  planDistributionChartOptions: EChartsCoreOption = {};
+  hasPlanDistributionChart = false;
+  planDistributionChartHeight = 280;
+
   // Uso por mes (últimos 6 meses)
   monthlyUsage = [
     { month: 'Jul 2023', users: 980, posts: 12000 },
@@ -66,6 +73,7 @@ export class BusinessMetricsComponent implements OnInit {
     this.loadPlanDistribution();
     this.loadMonthlyUsage();
     this.loadTopClients();
+    this.rebuildPlanDistributionChart();
   }
 
   private loadOverview(): void {
@@ -108,8 +116,101 @@ export class BusinessMetricsComponent implements OnInit {
           count: plan.count,
           percentage: plan.percentage
         }));
+        this.rebuildPlanDistributionChart();
+      },
+      error: () => {
+        this.rebuildPlanDistributionChart();
       }
     });
+  }
+
+  private rebuildPlanDistributionChart(): void {
+    const rows = this.planDistribution;
+    if (!rows.length) {
+      this.hasPlanDistributionChart = false;
+      this.planDistributionChartOptions = {};
+      return;
+    }
+
+    const categories = rows.map((r) => r.plan);
+    /** Misma altura base que Métricas globales en inicio (220px), escala si hay muchos planes */
+    this.planDistributionChartHeight = Math.min(520, Math.max(220, 56 + rows.length * 48));
+
+    this.hasPlanDistributionChart = true;
+    this.planDistributionChartOptions = {
+      textStyle: { fontFamily: 'inherit' },
+      legend: {
+        data: ['Usuarios'],
+        bottom: 0,
+        itemGap: 16,
+        textStyle: { fontSize: 11, color: '#64748b' }
+      },
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: { type: 'shadow' },
+        formatter: (params: unknown) => {
+          const p = Array.isArray(params) ? params[0] : params;
+          const data = p as { name: string; value: number; dataIndex: number };
+          const idx = data.dataIndex;
+          const row = rows[idx];
+          if (!row) return '';
+          return `${row.plan}<br/>${row.count.toLocaleString()} usuarios · ${row.percentage}%`;
+        }
+      },
+      grid: {
+        left: '2%',
+        right: '3%',
+        bottom: 40,
+        top: 12,
+        containLabel: true
+      },
+      xAxis: {
+        type: 'value',
+        axisLabel: { fontSize: 11, color: '#64748b' },
+        splitLine: { lineStyle: { color: 'rgba(148, 163, 184, 0.25)' } }
+      },
+      yAxis: {
+        type: 'category',
+        data: categories,
+        inverse: true,
+        axisLabel: { fontSize: 11, color: '#64748b' },
+        axisTick: { show: false },
+        axisLine: { show: false }
+      },
+      series: [
+        {
+          name: 'Usuarios',
+          type: 'bar',
+          data: rows.map((r) => r.count),
+          barMaxWidth: 36,
+          itemStyle: {
+            borderRadius: [0, 10, 10, 0],
+            color: {
+              type: 'linear',
+              x: 0,
+              y: 0,
+              x2: 1,
+              y2: 0,
+              colorStops: [
+                { offset: 0, color: '#f472b6' },
+                { offset: 1, color: '#a78bfa' }
+              ]
+            }
+          },
+          label: {
+            show: true,
+            position: 'right',
+            formatter: (p: { dataIndex: number }) => {
+              const row = rows[p.dataIndex];
+              return row ? `${row.percentage}%` : '';
+            },
+            fontSize: 11,
+            color: '#7c3aed',
+            fontWeight: 600
+          }
+        }
+      ]
+    };
   }
 
   private loadMonthlyUsage(): void {

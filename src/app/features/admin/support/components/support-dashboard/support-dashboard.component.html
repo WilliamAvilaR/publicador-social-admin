@@ -158,7 +158,7 @@
       <ng-container *ngIf="!isLoadingRequests">
         <div class="requests-grid-container" *ngIf="requests.length > 0">
           <ag-grid-angular
-            class="ag-theme-quartz requests-grid"
+            class="requests-grid"
             [rowData]="requests"
             [columnDefs]="requestGridColumnDefs"
             [defaultColDef]="requestGridDefaultColDef"
@@ -223,7 +223,7 @@
       <ng-container *ngIf="!isLoadingErrors">
         <div class="errors-grid-container" *ngIf="errors.length > 0">
           <ag-grid-angular
-            class="ag-theme-quartz errors-grid"
+            class="errors-grid"
             [rowData]="errors"
             [columnDefs]="errorGridColumnDefs"
             [defaultColDef]="errorGridDefaultColDef"

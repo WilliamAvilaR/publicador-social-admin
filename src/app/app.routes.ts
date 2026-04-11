@@ -29,10 +29,6 @@ export const routes: Routes = [
         loadComponent: () => import('./features/admin/clients/components/client-detail/client-detail.component').then(m => m.ClientDetailComponent)
       },
       {
-        path: 'suscripciones',
-        loadComponent: () => import('./features/admin/subscriptions/components/subscriptions-list/subscriptions-list.component').then(m => m.SubscriptionsListComponent)
-      },
-      {
         path: 'planes',
         loadComponent: () => import('./features/admin/plans/components/plans-list/plans-list.component').then(m => m.PlansListComponent)
       },

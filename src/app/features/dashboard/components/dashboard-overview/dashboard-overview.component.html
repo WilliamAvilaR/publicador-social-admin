@@ -2,10 +2,9 @@
   <p class="dash-home__kpi-error" *ngIf="kpiErrorMessage">{{ kpiErrorMessage }}</p>
 
   <section class="dash-home__layout">
-    <div class="dash-home__kpis-slot">
-      <p class="dash-home__kpis-loading" *ngIf="isLoadingKpis">Cargando resumen del panel…</p>
-      <div class="dash-home__kpis dash-home__kpis--three" *ngIf="!isLoadingKpis">
-        <article class="kpi-card kpi-card--clients">
+    <p class="dash-home__kpis-loading dash-home__layout-loading" *ngIf="isLoadingKpis">Cargando resumen del panel…</p>
+
+    <article class="kpi-card kpi-card--clients dash-home__div1" *ngIf="!isLoadingKpis">
           <div class="kpi-card__icon-wrap kpi-card__icon-wrap--pink">
             <img src="assets/icons/Clientes.svg" width="28" height="28" alt="" />
           </div>
@@ -17,9 +16,9 @@
             </span>
             <span class="kpi-card__delta kpi-card__delta--muted" *ngIf="newClientsThisMonth === 0">Sin altas este mes</span>
           </div>
-        </article>
+    </article>
 
-        <article class="kpi-card kpi-card--subs">
+    <article class="kpi-card kpi-card--subs dash-home__div2" *ngIf="!isLoadingKpis">
           <div class="kpi-card__icon-wrap kpi-card__icon-wrap--purple">
             <img src="assets/icons/Suscripciones.svg" width="28" height="28" alt="" />
           </div>
@@ -29,11 +28,11 @@
             <span class="kpi-card__delta kpi-card__delta--muted" *ngIf="overviewTrends?.totalActiveUsers as tu">
               Actividad (usuarios activos) {{ trendSuffix(tu) }}
             </span>
-            <span class="kpi-card__delta kpi-card__delta--muted" *ngIf="!overviewTrends">Vista consolidada de suscripciones</span>
+            <span class="kpi-card__delta kpi-card__delta--muted" *ngIf="!overviewTrends">Total en distribución por plan (métricas)</span>
           </div>
-        </article>
+    </article>
 
-        <article class="kpi-card kpi-card--plans">
+    <article class="kpi-card kpi-card--plans dash-home__div3" *ngIf="!isLoadingKpis">
           <div class="kpi-card__icon-wrap kpi-card__icon-wrap--rose">
             <img src="assets/icons/Planes.svg" width="28" height="28" alt="" />
           </div>
@@ -42,12 +41,9 @@
             <span class="kpi-card__label">Planes disponibles</span>
             <span class="kpi-card__delta kpi-card__delta--muted">En catálogo administración</span>
           </div>
-        </article>
-      </div>
-    </div>
+    </article>
 
-    <aside class="dash-home__errors-column">
-      <article class="kpi-card kpi-card--support kpi-card--in-errors-column" *ngIf="!isLoadingKpis">
+    <article class="kpi-card kpi-card--support kpi-card--in-errors-column dash-home__div6" *ngIf="!isLoadingKpis">
         <div class="kpi-card__icon-wrap kpi-card__icon-wrap--light">
           <img src="assets/icons/Soporte.svg" width="28" height="28" alt="" />
         </div>
@@ -56,9 +52,9 @@
           <span class="kpi-card__label">Errores sin resolver</span>
           <span class="kpi-card__delta kpi-card__delta--light">Desde logs del sistema</span>
         </div>
-      </article>
+    </article>
 
-      <div class="dash-home__tickets">
+    <div class="dash-home__tickets dash-home__div7">
         <h2 class="tickets__title">Últimos errores / incidencias</h2>
         <ul class="tickets__list">
           <li class="tickets__item" *ngFor="let t of recentIssues">
@@ -75,18 +71,17 @@
         </ul>
         <p class="tickets__empty" *ngIf="!recentIssues.length && !isLoadingKpis">Sin incidencias recientes.</p>
         <a routerLink="/dashboard/soporte" [queryParams]="{ subtab: 'errors' }" class="tickets__btn">Ver todos</a>
-      </div>
+    </div>
 
-      <a routerLink="/dashboard/soporte" class="support-cta support-cta--in-column">
+    <a routerLink="/dashboard/soporte" class="support-cta support-cta--in-column dash-home__div8">
         <span class="support-cta__icon-wrap">
           <img src="assets/icons/Soporte.svg" width="24" height="24" alt="" />
         </span>
         <span class="support-cta__text">Soporte técnico</span>
         <span class="support-cta__chevron" aria-hidden="true">›</span>
-      </a>
-    </aside>
+    </a>
 
-    <div class="dash-home__chart-card">
+    <div class="dash-home__chart-card dash-home__div4">
       <div class="chart-card__head">
         <h2 class="chart-card__title">Métricas globales</h2>
         <div class="chart-card__tabs" role="tablist">
@@ -117,18 +112,16 @@
         </div>
       </div>
 
-      <div class="chart-card__plot" *ngIf="!isLoadingChart && chartBars.length">
-        <div class="chart-card__bars">
-          <div class="chart-card__bar-col" *ngFor="let b of chartBars">
-            <div class="chart-card__bar" [style.height.%]="b.barPct"></div>
-            <span class="chart-card__xlabel">{{ b.label }}</span>
-          </div>
-        </div>
-        <svg class="chart-card__line-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-          <polyline class="chart-card__line" fill="none" [attr.points]="linePoints()" />
-        </svg>
+      <div class="chart-card__plot" *ngIf="!isLoadingChart && hasMetricsChartData">
+        <div
+          echarts
+          class="chart-card__echarts"
+          [options]="metricsChartOptions"
+          [initOpts]="{ height: 220 }"
+          [autoResize]="true"
+        ></div>
       </div>
-      <p class="chart-card__empty" *ngIf="!isLoadingChart && !chartBars.length">No hay datos de uso mensual todavía.</p>
+      <p class="chart-card__empty" *ngIf="!isLoadingChart && !hasMetricsChartData">No hay datos de uso mensual todavía.</p>
       <p class="chart-card__empty" *ngIf="isLoadingChart">Cargando gráfico…</p>
 
       <footer class="chart-card__foot" *ngIf="overviewMetrics">
@@ -148,7 +141,7 @@
       </footer>
     </div>
 
-    <section class="dash-home__bottom">
+    <section class="dash-home__bottom dash-home__div5">
       <div class="plans-strip">
         <div class="plans-strip__head">
           <h2 class="plans-strip__title">Gestión de planes</h2>

@@ -76,25 +76,30 @@
     </div>
   </div>
 
-  <!-- Distribución por Plan -->
-  <div class="section-card">
-    <h2 class="section-card__heading">
-      <img class="section-card__heading-icon" src="assets/icons/Distribuci%C3%B3n%20por%20Plan.svg" width="28" height="28" alt="" />
-      Distribución por Plan
-    </h2>
-    <div class="plan-distribution">
-      <div class="plan-item" *ngFor="let plan of planDistribution">
-        <div class="plan-header">
-          <span class="plan-name">{{ plan.plan }}</span>
-          <span class="plan-count">{{ plan.count }} usuarios</span>
-        </div>
-        <div class="plan-bar">
-          <div class="plan-bar-fill" [style.width.%]="plan.percentage" [ngClass]="'plan-' + plan.plan.toLowerCase()">
-            <span class="plan-percentage">{{ plan.percentage }}%</span>
-          </div>
-        </div>
-      </div>
+  <!-- Distribución por Plan (misma línea visual que Métricas globales en inicio) -->
+  <div class="metrics-global-chart-card">
+    <div class="metrics-global-chart-card__head">
+      <h2 class="metrics-global-chart-card__title">
+        <img
+          class="metrics-global-chart-card__title-icon"
+          src="assets/icons/Distribuci%C3%B3n%20por%20Plan.svg"
+          width="28"
+          height="28"
+          alt=""
+        />
+        Distribución por Plan
+      </h2>
     </div>
+    <div class="metrics-global-chart-card__plot" *ngIf="hasPlanDistributionChart">
+      <div
+        echarts
+        class="metrics-global-chart-card__echarts"
+        [options]="planDistributionChartOptions"
+        [initOpts]="{ height: planDistributionChartHeight }"
+        [autoResize]="true"
+      ></div>
+    </div>
+    <p class="metrics-global-chart-card__empty" *ngIf="!hasPlanDistributionChart">No hay datos de distribución por plan.</p>
   </div>
 
   <!-- Uso Mensual -->

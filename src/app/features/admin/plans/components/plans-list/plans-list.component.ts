@@ -199,4 +199,76 @@ export class PlansListComponent implements OnInit {
   get defaultPlan(): Plan | undefined {
     return this.plans.find((p) => p.IsDefault);
   }
+
+  /** Orden estable para cards y columnas de la comparativa */
+  get publicPlansOrdered(): PublicPlan[] {
+    return [...this.publicPlans].sort((a, b) => {
+      const oa = a.displayOrder ?? 999;
+      const ob = b.displayOrder ?? 999;
+      if (oa !== ob) {
+        return oa - ob;
+      }
+      return (a.name || '').localeCompare(b.name || '', 'es');
+    });
+  }
+
+  readonly comparisonLimitRows: {
+    key: 'pages' | 'users' | 'scheduledPosts' | 'apiCalls';
+    label: string;
+  }[] = [
+    { key: 'pages', label: 'Páginas' },
+    { key: 'users', label: 'Usuarios' },
+    { key: 'scheduledPosts', label: 'Posts programados' },
+    { key: 'apiCalls', label: 'Límite API' }
+  ];
+
+  /** Textos de feature únicos en todo el catálogo (para filas de la tabla) */
+  get uniquePublicFeatureLabels(): string[] {
+    const seen = new Set<string>();
+    const ordered: string[] = [];
+    for (const plan of this.publicPlansOrdered) {
+      for (const f of plan.features || []) {
+        const t = (f || '').trim();
+        if (!t || seen.has(t)) {
+          continue;
+        }
+        seen.add(t);
+        ordered.push(t);
+      }
+    }
+    return ordered.sort((a, b) => a.localeCompare(b, 'es'));
+  }
+
+  planIncludesFeature(plan: PublicPlan, featureLabel: string): boolean {
+    return (plan.features || []).some((f) => (f || '').trim() === featureLabel);
+  }
+
+  /**
+   * Resumen corto para la card: hasta 3 ítems; prioriza features, si no hay, límites con etiqueta.
+   */
+  getPublicCardHighlights(p: PublicPlan, max = 3): string[] {
+    const out: string[] = [];
+    if (p.features?.length) {
+      for (const f of p.features) {
+        if (out.length >= max) {
+          break;
+        }
+        const t = (f || '').trim();
+        if (t) {
+          out.push(t);
+        }
+      }
+      return out;
+    }
+    for (const row of this.comparisonLimitRows) {
+      if (out.length >= max) {
+        break;
+      }
+      const v = this.getPublicLimitForCard(p, row.key);
+      if (v !== 'N/A') {
+        out.push(`${row.label}: ${v}`);
+      }
+    }
+    return out;
+  }
 }

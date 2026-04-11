@@ -116,6 +116,9 @@
     aria-labelledby="public-plans-heading"
   >
     <h2 id="public-plans-heading">Catálogo público</h2>
+    <p class="section-hint public-catalog-hint">
+      Vista resumida en tarjetas; la tabla inferior compara límites e incluye entre planes.
+    </p>
 
     <div class="error-message" *ngIf="publicErrorMessage">
       <img src="assets/icons/Errores del Sistema.svg" width="16" height="16" alt="" aria-hidden="true" />
@@ -127,37 +130,55 @@
     </div>
 
     <div *ngIf="!isLoadingPublic && !publicErrorMessage">
-      <div class="plans-grid" *ngIf="publicPlans.length > 0">
-        <div class="plan-card" *ngFor="let p of publicPlans">
-          <div class="plan-header">
-            <h3>{{ p.name }}</h3>
-            <div class="plan-price">
-              <span class="currency">$</span>
-              <span class="amount">{{ getPublicCardAmount(p) }}</span>
+      <div class="plans-grid plans-grid--compact" *ngIf="publicPlans.length > 0">
+        <article class="plan-card plan-card--compact" *ngFor="let p of publicPlansOrdered">
+          <div class="plan-card__top">
+            <span class="plan-badge plan-badge--default" *ngIf="p.isDefault">Recomendado</span>
+            <h3 class="plan-card__title">{{ p.name }}</h3>
+            <div class="plan-price plan-price--compact">
+              <span class="currency" *ngIf="showPublicPricePeriod(p)">$</span>
+              <span
+                class="amount"
+                [class.amount--free]="!showPublicPricePeriod(p)"
+              >{{ getPublicCardAmount(p) }}</span>
               <span class="period" *ngIf="showPublicPricePeriod(p)">{{ getPublicPricePeriodLabel(p) }}</span>
             </div>
           </div>
-          <div class="plan-limits">
-            <div class="limit-item">
-              <span class="limit-label">Páginas:</span>
-              <span class="limit-value">{{ getPublicLimitForCard(p, 'pages') }}</span>
-            </div>
-            <div class="limit-item">
-              <span class="limit-label">Usuarios:</span>
-              <span class="limit-value">{{ getPublicLimitForCard(p, 'users') }}</span>
-            </div>
-            <div class="limit-item">
-              <span class="limit-label">Posts Programados:</span>
-              <span class="limit-value">{{ getPublicLimitForCard(p, 'scheduledPosts') }}</span>
-            </div>
-            <div class="limit-item">
-              <span class="limit-label">Límite API:</span>
-              <span class="limit-value">{{ getPublicLimitForCard(p, 'apiCalls') }}</span>
-            </div>
-          </div>
-          <div class="plan-features" *ngIf="p.features && p.features.length > 0">
-            <div class="feature-item" *ngFor="let feature of p.features">{{ feature }}</div>
-          </div>
+          <p class="plan-card__description" *ngIf="p.description?.trim()">{{ p.description }}</p>
+          <ul class="plan-card__highlights" *ngIf="getPublicCardHighlights(p).length > 0">
+            <li *ngFor="let line of getPublicCardHighlights(p)">{{ line }}</li>
+          </ul>
+          <a href="#comparativa-planes" class="plan-card__compare-link">Ver comparativa completa</a>
+        </article>
+      </div>
+
+      <div class="public-comparison" *ngIf="publicPlans.length > 0" id="comparativa-planes">
+        <h3 class="public-comparison__title">Comparativa de planes</h3>
+        <p class="section-hint">Mismos datos que el catálogo público; útil para contrastar límites e inclusiones.</p>
+        <div class="comparison-table-wrap">
+          <table class="comparison-table">
+            <thead>
+              <tr>
+                <th scope="col" class="comparison-table__feature-col">Característica</th>
+                <th *ngFor="let col of publicPlansOrdered" scope="col" class="comparison-table__plan-col">
+                  {{ col.name }}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of comparisonLimitRows">
+                <th scope="row">{{ row.label }}</th>
+                <td *ngFor="let col of publicPlansOrdered">{{ getPublicLimitForCard(col, row.key) }}</td>
+              </tr>
+              <tr *ngFor="let feat of uniquePublicFeatureLabels" class="comparison-table__feature-row">
+                <th scope="row">{{ feat }}</th>
+                <td *ngFor="let col of publicPlansOrdered" class="comparison-table__check-cell">
+                  <span class="comparison-yes" *ngIf="planIncludesFeature(col, feat)" title="Incluido">✓</span>
+                  <span class="comparison-no" *ngIf="!planIncludesFeature(col, feat)">—</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
 

@@ -155,3 +155,9 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(req);
 };
+
+/** Reinicia el estado interno del interceptor (singleton). Usar solo en pruebas. */
+export function resetAuthInterceptorForTests(): void {
+  isRefreshing = false;
+  refreshTokenSubject.next(null);
+}

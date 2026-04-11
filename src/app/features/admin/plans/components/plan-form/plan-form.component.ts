@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { PlansService } from '../../services/plans.service';
-import { FeaturesService } from '../../../features/services/features.service';
 import {
   PlanDetail,
   CreatePlanRequest,

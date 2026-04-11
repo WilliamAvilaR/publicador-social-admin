@@ -25,6 +25,19 @@ const emptyMeta = {
   previusPageUrl: '',
 };
 
+/** JWT mínimo válido para pruebas de `exp` (firma ignorada). */
+function minimalJwt(expUnix: number): string {
+  const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+  const payload = btoa(JSON.stringify({ exp: expUnix }))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+  return `${header}.${payload}.x`;
+}
+
 describe('AuthService', () => {
   let service: AuthService;
   let httpMock: HttpTestingController;
@@ -323,6 +336,26 @@ describe('AuthService', () => {
         fullName: 'F',
       });
       expect(service.isAuthenticated()).toBe(true);
+    });
+
+    it('isAccessTokenExpired es true sin token', () => {
+      expect(service.isAccessTokenExpired()).toBe(true);
+    });
+
+    it('isAccessTokenExpired es false con exp en el futuro', () => {
+      const exp = Math.floor(Date.now() / 1000) + 3600;
+      localStorage.setItem('auth_token', minimalJwt(exp));
+      expect(service.isAccessTokenExpired()).toBe(false);
+    });
+
+    it('isAccessTokenExpired es true con exp en el pasado', () => {
+      localStorage.setItem('auth_token', minimalJwt(1_000_000_000));
+      expect(service.isAccessTokenExpired()).toBe(true);
+    });
+
+    it('isAccessTokenExpired es false si el token no es JWT con exp', () => {
+      localStorage.setItem('auth_token', 'opaque-string');
+      expect(service.isAccessTokenExpired()).toBe(false);
     });
 
     it('logout elimina token y usuario', () => {

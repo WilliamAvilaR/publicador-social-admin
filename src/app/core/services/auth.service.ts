@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { LoginRequest, LoginResponse, UserData, RegisterRequest, RegisterResponse, RefreshResponse, ApiError, ChangePasswordRequest, ChangePasswordResponse, UpdateProfileRequest, UpdateProfileResponse, UserProfileData, UploadAvatarResponse, DeleteAvatarResponse } from '../models/auth.model';
+import { isJwtExpired } from '../utils/jwt.util';
 
 @Injectable({
   providedIn: 'root'
@@ -144,6 +145,18 @@ export class AuthService {
     const user = this.getUser();
     // Verificar que tanto el token como el usuario sean válidos
     return !!(token && user);
+  }
+
+  /**
+   * True si el access token JWT tiene `exp` y ya caducó (con margen de reloj).
+   * Sin `exp` o token no parseable: false (el backend sigue siendo la fuente de verdad).
+   */
+  isAccessTokenExpired(): boolean {
+    const token = this.getToken();
+    if (!token) {
+      return true;
+    }
+    return isJwtExpired(token);
   }
 
   // Cerrar sesión

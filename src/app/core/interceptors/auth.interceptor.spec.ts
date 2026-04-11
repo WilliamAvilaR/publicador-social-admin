@@ -26,6 +26,7 @@ describe('authInterceptor', () => {
     refreshToken: ReturnType<typeof vi.fn>;
     setAuthData: ReturnType<typeof vi.fn>;
     logout: ReturnType<typeof vi.fn>;
+    isAccessTokenExpired: ReturnType<typeof vi.fn>;
   };
   let routerMock: { url: string; navigate: ReturnType<typeof vi.fn> };
 
@@ -36,6 +37,7 @@ describe('authInterceptor', () => {
       refreshToken: vi.fn(),
       setAuthData: vi.fn(),
       logout: vi.fn(),
+      isAccessTokenExpired: vi.fn(() => false),
     };
     routerMock = { url: '/app', navigate: vi.fn() };
 
@@ -145,6 +147,29 @@ describe('authInterceptor', () => {
     req.flush({});
     await done;
     expect(routerMock.navigate).not.toHaveBeenCalled();
+  });
+
+  it('access token expirado renueva antes sin enviar la petición con JWT viejo', async () => {
+    authMock.isAccessTokenExpired.mockReturnValue(true);
+    const refreshPayload = {
+      data: {
+        token: 'jwt-renewed',
+        idUsuario: 1,
+        email: 'a@b.com',
+        rol: 'user',
+        fullName: 'Test',
+      },
+      meta: emptyMeta,
+    };
+    authMock.refreshToken.mockReturnValue(of(refreshPayload));
+
+    const pending = firstValueFrom(http.get('/api/pre-refresh'));
+    const only = httpMock.expectOne('/api/pre-refresh');
+    expect(only.request.headers.get('Authorization')).toBe('Bearer jwt-renewed');
+    expect(authMock.refreshToken).toHaveBeenCalled();
+    only.flush({ ok: true });
+    await pending;
+    expect(authMock.setAuthData).toHaveBeenCalledWith('jwt-renewed', refreshPayload.data);
   });
 
   it('401 en API protegida renueva token y reintenta con el nuevo Bearer', async () => {
